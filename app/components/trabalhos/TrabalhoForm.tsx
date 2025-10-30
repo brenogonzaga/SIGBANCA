@@ -1,0 +1,427 @@
+"use client";
+
+import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/components/ui/Toast";
+import { Button } from "@/app/components/ui/Button";
+import { VALIDATION_CONFIG, VALIDATION_MESSAGES, FILE_CONFIG } from "@/app/config";
+
+interface TrabalhoFormProps {
+  trabalhoId?: string;
+}
+
+interface Usuario {
+  id: string;
+  nome: string;
+  email: string;
+  titulacao?: string | null;
+}
+
+export default function TrabalhoForm({ trabalhoId }: TrabalhoFormProps) {
+  const { token, usuario } = useAuth();
+  const { showToast } = useToast();
+  const router = useRouter();
+
+  const [isLoading, setIsLoading] = useState(false);
+  const [isLoadingProfessores, setIsLoadingProfessores] = useState(true);
+  const [isLoadingAlunos, setIsLoadingAlunos] = useState(true);
+  const [professores, setProfessores] = useState<Usuario[]>([]);
+  const [alunos, setAlunos] = useState<Usuario[]>([]);
+  const [arquivo, setArquivo] = useState<File | null>(null);
+
+  const [formData, setFormData] = useState({
+    titulo: "",
+    descricao: "",
+    curso: "",
+    alunoId: "",
+    orientadorId: "",
+    dataInicio: new Date().toISOString().split("T")[0],
+  });
+
+  useEffect(() => {
+    loadProfessores();
+    if (usuario?.role === "COORDENADOR" || usuario?.role === "ADMIN") {
+      loadAlunos();
+    } else if (usuario?.role === "ALUNO") {
+      setFormData((prev) => ({ ...prev, alunoId: usuario.id }));
+    }
+    if (trabalhoId) {
+      loadTrabalho();
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trabalhoId]);
+
+  async function loadProfessores() {
+    setIsLoadingProfessores(true);
+    try {
+      const response = await fetch("/api/usuarios?role=PROFESSOR", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setProfessores(data);
+      } else if (response.status === 401) {
+        showToast("Sessão expirada. Faça login novamente", "warning");
+        router.push("/login");
+      } else if (response.status === 403) {
+        showToast("Sem permissão para acessar professores", "error");
+      } else {
+        showToast("Erro ao carregar professores", "error");
+      }
+    } catch (error) {
+      console.error("Erro ao carregar professores:", error);
+      showToast("Erro de conexão ao carregar professores", "error");
+    } finally {
+      setIsLoadingProfessores(false);
+    }
+  }
+
+  async function loadAlunos() {
+    setIsLoadingAlunos(true);
+    try {
+      const response = await fetch("/api/usuarios?role=ALUNO", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setAlunos(data);
+      } else if (response.status === 401) {
+        showToast("Sessão expirada. Faça login novamente", "warning");
+        router.push("/login");
+      } else if (response.status === 403) {
+        showToast("Sem permissão para acessar alunos", "error");
+      } else {
+        showToast("Erro ao carregar alunos", "error");
+      }
+    } catch (error) {
+      console.error("Erro ao carregar alunos:", error);
+      showToast("Erro de conexão ao carregar alunos", "error");
+    } finally {
+      setIsLoadingAlunos(false);
+    }
+  }
+
+  async function loadTrabalho() {
+    try {
+      const response = await fetch(`/api/trabalhos/${trabalhoId}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        const trabalho = await response.json();
+        setFormData({
+          titulo: trabalho.titulo,
+          descricao: trabalho.descricao,
+          curso: trabalho.curso,
+          alunoId: trabalho.alunoId,
+          orientadorId: trabalho.orientadorId,
+          dataInicio: new Date(trabalho.dataInicio).toISOString().split("T")[0],
+        });
+      } else if (response.status === 401) {
+        showToast("Sessão expirada. Faça login novamente", "warning");
+        router.push("/login");
+      } else if (response.status === 403) {
+        showToast("Sem permissão para acessar este trabalho", "error");
+        router.push("/trabalhos");
+      } else if (response.status === 404) {
+        showToast("Trabalho não encontrado", "error");
+        router.push("/trabalhos");
+      } else {
+        showToast("Erro ao carregar trabalho", "error");
+      }
+    } catch (error) {
+      console.error("Erro ao carregar trabalho:", error);
+      showToast("Erro de conexão ao carregar trabalho", "error");
+    }
+  }
+
+  async function handleSubmit(e: React.FormEvent) {
+    e.preventDefault();
+
+    if (!formData.titulo.trim()) {
+      showToast(VALIDATION_MESSAGES.TRABALHO.TITULO_REQUIRED, "error");
+      return;
+    }
+    if (formData.titulo.trim().length < VALIDATION_CONFIG.TRABALHO.TITULO.MIN) {
+      showToast(VALIDATION_MESSAGES.TRABALHO.TITULO_MIN, "error");
+      return;
+    }
+    if (formData.titulo.trim().length > VALIDATION_CONFIG.TRABALHO.TITULO.MAX) {
+      showToast(VALIDATION_MESSAGES.TRABALHO.TITULO_MAX, "error");
+      return;
+    }
+    if (!formData.descricao.trim()) {
+      showToast(VALIDATION_MESSAGES.TRABALHO.DESCRICAO_REQUIRED, "error");
+      return;
+    }
+    if (formData.descricao.trim().length < VALIDATION_CONFIG.TRABALHO.DESCRICAO.MIN) {
+      showToast(VALIDATION_MESSAGES.TRABALHO.DESCRICAO_MIN, "error");
+      return;
+    }
+    if (formData.descricao.trim().length > VALIDATION_CONFIG.TRABALHO.DESCRICAO.MAX) {
+      showToast(VALIDATION_MESSAGES.TRABALHO.DESCRICAO_MAX, "error");
+      return;
+    }
+    if (!formData.curso.trim()) {
+      showToast(VALIDATION_MESSAGES.TRABALHO.CURSO_REQUIRED, "error");
+      return;
+    }
+    if (formData.curso.trim().length < VALIDATION_CONFIG.TRABALHO.CURSO.MIN) {
+      showToast(VALIDATION_MESSAGES.TRABALHO.CURSO_MIN, "error");
+      return;
+    }
+    if (!formData.alunoId) {
+      showToast(VALIDATION_MESSAGES.TRABALHO.ALUNO_REQUIRED, "error");
+      return;
+    }
+    if (!formData.orientadorId) {
+      showToast(VALIDATION_MESSAGES.TRABALHO.ORIENTADOR_REQUIRED, "error");
+      return;
+    }
+
+    if (!trabalhoId && !arquivo) {
+      showToast(VALIDATION_MESSAGES.TRABALHO.ARQUIVO_REQUIRED, "error");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      const url = trabalhoId ? `/api/trabalhos/${trabalhoId}` : "/api/trabalhos";
+      const method = trabalhoId ? "PUT" : "POST";
+
+      const response = await fetch(url, {
+        method,
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(formData),
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        let errorMessage = "Erro ao salvar trabalho"; // Mensagens específicas por status HTTP
+        if (response.status === 401) {
+          errorMessage = "Sessão expirada. Faça login novamente";
+        } else if (response.status === 403) {
+          errorMessage = "Você não tem permissão para criar/editar trabalhos";
+        } else if (response.status === 400) {
+          errorMessage = error.error || "Dados inválidos. Verifique os campos";
+        } else if (error.error) {
+          errorMessage = error.error;
+        }
+
+        throw new Error(errorMessage);
+      }
+
+      const trabalhoData = await response.json();
+
+      if (!trabalhoId && arquivo) {
+        const uploadFormData = new FormData();
+        uploadFormData.append("arquivo", arquivo);
+        uploadFormData.append("trabalhoId", trabalhoData.id);
+        uploadFormData.append("changelog", "Versão inicial");
+
+        const uploadResponse = await fetch("/api/versoes", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: uploadFormData,
+        });
+
+        if (!uploadResponse.ok) {
+          const uploadError = await uploadResponse.json();
+          let errorMessage = "Erro ao fazer upload do arquivo";
+
+          if (uploadResponse.status === 400) {
+            errorMessage = uploadError.error || "Arquivo inválido. Verifique tamanho e formato";
+          }
+
+          throw new Error(errorMessage);
+        }
+      }
+
+      showToast(
+        trabalhoId ? "Trabalho atualizado com sucesso!" : "Trabalho criado com sucesso!",
+        "success"
+      );
+      router.push("/trabalhos");
+    } catch (error) {
+      let errorMessage = "Erro ao salvar trabalho";
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (error instanceof TypeError && String(error).includes("fetch")) {
+        errorMessage = "Erro de conexão. Verifique sua internet";
+      }
+
+      showToast(errorMessage, "error");
+    } finally {
+      setIsLoading(false);
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="space-y-6">
+      {/* Título */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Título do Trabalho *
+        </label>
+        <input
+          type="text"
+          value={formData.titulo}
+          onChange={(e) => setFormData({ ...formData, titulo: e.target.value })}
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          placeholder="Digite o título do trabalho"
+        />
+      </div>
+
+      {/* Descrição */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Descrição *
+        </label>
+        <textarea
+          value={formData.descricao}
+          onChange={(e) => setFormData({ ...formData, descricao: e.target.value })}
+          rows={4}
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          placeholder="Descreva o trabalho"
+        />
+      </div>
+
+      {/* Curso */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Curso *
+        </label>
+        <input
+          type="text"
+          value={formData.curso}
+          onChange={(e) => setFormData({ ...formData, curso: e.target.value })}
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+          placeholder="Ex: Engenharia de Software, Sistemas de Informação..."
+        />
+      </div>
+
+      {/* Aluno - apenas se for COORDENADOR ou ADMIN */}
+      {(usuario?.role === "COORDENADOR" || usuario?.role === "ADMIN") && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Aluno *
+          </label>
+          <select
+            value={formData.alunoId}
+            onChange={(e) => setFormData({ ...formData, alunoId: e.target.value })}
+            disabled={isLoadingAlunos}
+            className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+          >
+            <option value="">
+              {isLoadingAlunos ? "Carregando alunos..." : "Selecione um aluno"}
+            </option>
+            {alunos.map((aluno) => (
+              <option key={aluno.id} value={aluno.id}>
+                {aluno.nome} - {aluno.email}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
+      {/* Orientador */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Orientador *
+        </label>
+        <select
+          value={formData.orientadorId}
+          onChange={(e) => setFormData({ ...formData, orientadorId: e.target.value })}
+          disabled={isLoadingProfessores}
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white disabled:opacity-50 disabled:cursor-not-allowed"
+        >
+          <option value="">
+            {isLoadingProfessores ? "Carregando professores..." : "Selecione um orientador"}
+          </option>
+          {professores.map((prof) => (
+            <option key={prof.id} value={prof.id}>
+              {prof.titulacao ? `${prof.titulacao} ` : ""}
+              {prof.nome}
+            </option>
+          ))}
+        </select>
+      </div>
+
+      {/* Data de Início */}
+      <div>
+        <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+          Data de Início *
+        </label>
+        <input
+          type="date"
+          value={formData.dataInicio}
+          onChange={(e) => setFormData({ ...formData, dataInicio: e.target.value })}
+          className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+        />
+      </div>
+
+      {/* Upload de Arquivo - apenas na criação */}
+      {!trabalhoId && (
+        <div>
+          <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+            Arquivo (Primeira Versão) *
+          </label>
+          <div className="flex items-center gap-4">
+            <input
+              type="file"
+              accept={FILE_CONFIG.ACCEPT_STRING}
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) {
+                  if (file.size > FILE_CONFIG.MAX_SIZE) {
+                    showToast(FILE_CONFIG.ERRORS.TOO_LARGE, "error");
+                    e.target.value = "";
+                    return;
+                  }
+
+                  // Validar extensão do arquivo
+                  const ext = file.name.split(".").pop()?.toLowerCase();
+                  const allowedExt = FILE_CONFIG.ALLOWED_EXTENSIONS.map((e) =>
+                    e.replace(".", "")
+                  );
+                  if (!ext || !allowedExt.includes(ext)) {
+                    showToast(FILE_CONFIG.ERRORS.INVALID_TYPE, "error");
+                    e.target.value = "";
+                    return;
+                  }
+
+                  setArquivo(file);
+                }
+              }}
+              className="block w-full text-sm text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 focus:outline-none"
+            />
+          </div>
+          {arquivo && (
+            <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+              Arquivo selecionado: {arquivo.name} ({(arquivo.size / 1024 / 1024).toFixed(2)} MB)
+            </p>
+          )}
+          <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+            Formatos aceitos: PDF, DOC, DOCX (máx. {FILE_CONFIG.MAX_SIZE_MB}MB)
+          </p>
+        </div>
+      )}
+
+      {/* Botões */}
+      <div className="flex gap-4 justify-end">
+        <Button type="button" variant="secondary" onClick={() => router.push("/trabalhos")}>
+          Cancelar
+        </Button>
+        <Button type="submit" variant="gradient" isLoading={isLoading}>
+          {trabalhoId ? "Atualizar Trabalho" : "Criar Trabalho"}
+        </Button>
+      </div>
+    </form>
+  );
+}

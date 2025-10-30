@@ -1,0 +1,295 @@
+generator client {
+    provider = "prisma-client-js"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+    ALUNO // Estudante que submete trabalhos
+    PROFESSOR // Professor que pode orientar
+    COORDENADOR // Coordenador de curso
+    PROFESSOR_BANCA // Professor avaliador de banca
+    ADMIN // Administrador global do sistema
+}
+
+enum TrabalhoStatus {
+    EM_ELABORACAO // Trabalho sendo escrito
+    SUBMETIDO // Enviado para revisão
+    EM_REVISAO // Em análise pelo orientador
+    APROVADO_ORIENTADOR // Aprovado pelo orientador
+    AGUARDANDO_BANCA // Aguardando agendamento da banca
+    BANCA_AGENDADA // Banca agendada
+    APROVADO // Aprovado pela banca
+    REPROVADO // Reprovado pela banca
+    CANCELADO // Cancelado
+}
+
+enum BancaStatus {
+    AGENDADA
+    EM_ANDAMENTO
+    REALIZADA
+    CANCELADA
+}
+
+enum PapelBanca {
+    ORIENTADOR
+    AVALIADOR
+    SUPLENTE
+}
+
+model Usuario {
+    id       String   @id @default(cuid())
+    email    String   @unique
+    senha    String
+    nome     String
+    cpf      String?  @unique
+    telefone String?
+    role     UserRole @default(ALUNO)
+    ativo    Boolean  @default(true)
+
+    // Dados específicos do aluno
+    matricula    String?   @unique
+    curso        String?
+    dataIngresso DateTime?
+
+    // Dados específicos do professor
+    titulacao    String? // Dr., MSc., Esp., etc
+    departamento String?
+    areaAtuacao  String?
+    lattes       String?
+
+    // Relacionamentos
+    trabalhosComoAluno      Trabalho[]        @relation("TrabalhoAluno")
+    trabalhosComoOrientador Trabalho[]        @relation("TrabalhoOrientador")
+    versoes                 VersaoDocumento[] @relation("VersaoUpload")
+    comentarios             Comentario[]
+    membrosDeBanca          MembroBanca[]
+    avaliacoes              Avaliacao[]
+    notificacoes            Notificacao[]
+    auditLogs               AuditLog[]
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([email])
+    @@index([matricula])
+    @@index([role])
+    @@map("usuarios")
+}
+
+model Trabalho {
+    id            String         @id @default(cuid())
+    titulo        String
+    descricao     String         @db.Text
+    palavrasChave String[]       @default([])
+    curso         String
+    status        TrabalhoStatus @default(EM_ELABORACAO)
+    versaoAtual   Int            @default(0)
+
+    // Relacionamentos
+    alunoId String
+    aluno   Usuario @relation("TrabalhoAluno", fields: [alunoId], references: [id])
+
+    orientadorId String
+    orientador   Usuario @relation("TrabalhoOrientador", fields: [orientadorId], references: [id])
+
+    versoes VersaoDocumento[]
+    banca   Banca?
+
+    dataInicio    DateTime  @default(now())
+    dataSubmissao DateTime?
+    dataDefesa    DateTime?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([alunoId])
+    @@index([orientadorId])
+    @@index([status])
+    @@map("trabalhos")
+}
+
+model VersaoDocumento {
+    id           String   @id @default(cuid())
+    numeroVersao Int
+    trabalhoId   String
+    trabalho     Trabalho @relation(fields: [trabalhoId], references: [id], onDelete: Cascade)
+
+    nomeArquivo String
+    arquivoUrl  String
+    tamanho     Int
+    mimeType    String
+
+    changelog String? @db.Text
+
+    uploadPorId String
+    uploadPor   Usuario @relation("VersaoUpload", fields: [uploadPorId], references: [id])
+
+    comentarios Comentario[]
+
+    dataUpload DateTime @default(now())
+
+    @@unique([trabalhoId, numeroVersao])
+    @@index([trabalhoId])
+    @@map("versoes_documento")
+}
+
+model Comentario {
+    id    String @id @default(cuid())
+    texto String @db.Text
+
+    versaoId String
+    versao   VersaoDocumento @relation(fields: [versaoId], references: [id], onDelete: Cascade)
+
+    autorId String
+    autor   Usuario @relation(fields: [autorId], references: [id])
+
+    parentId  String?
+    parent    Comentario?  @relation("ComentarioResposta", fields: [parentId], references: [id])
+    respostas Comentario[] @relation("ComentarioResposta")
+
+    dataComentario DateTime @default(now())
+    editado        Boolean  @default(false)
+
+    @@index([versaoId])
+    @@index([autorId])
+    @@map("comentarios")
+}
+
+model Banca {
+    id         String   @id @default(cuid())
+    trabalhoId String   @unique
+    trabalho   Trabalho @relation(fields: [trabalhoId], references: [id], onDelete: Cascade)
+
+    data        DateTime
+    horario     String
+    local       String
+    modalidade  String   @default("PRESENCIAL") // PRESENCIAL, REMOTO, HIBRIDO
+    linkReuniao String? // Para bancas remotas
+
+    status BancaStatus @default(AGENDADA)
+
+    notaFinal Float?
+    resultado String? // APROVADO, APROVADO_COM_RESSALVAS, REPROVADO
+
+    membros MembroBanca[]
+    ataUrl  String?
+
+    observacoes String? @db.Text
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([data])
+    @@index([status])
+    @@map("bancas")
+}
+
+model MembroBanca {
+    id      String @id @default(cuid())
+    bancaId String
+    banca   Banca  @relation(fields: [bancaId], references: [id], onDelete: Cascade)
+
+    usuarioId String
+    usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+    papel      PapelBanca
+    confirmado Boolean    @default(false)
+    presente   Boolean    @default(false)
+
+    avaliacao Avaliacao?
+
+    createdAt DateTime @default(now())
+
+    @@unique([bancaId, usuarioId])
+    @@index([bancaId])
+    @@index([usuarioId])
+    @@map("membros_banca")
+}
+
+model Avaliacao {
+    id       String      @id @default(cuid())
+    membroId String      @unique
+    membro   MembroBanca @relation(fields: [membroId], references: [id], onDelete: Cascade)
+
+    avaliadoPorId String
+    avaliadoPor   Usuario @relation(fields: [avaliadoPorId], references: [id])
+
+    nota    Float
+    parecer String @db.Text
+
+    criterios CriterioAvaliacao[]
+
+    dataAvaliacao DateTime @default(now())
+
+    @@index([membroId])
+    @@map("avaliacoes")
+}
+
+model CriterioAvaliacao {
+    id          String    @id @default(cuid())
+    avaliacaoId String
+    avaliacao   Avaliacao @relation(fields: [avaliacaoId], references: [id], onDelete: Cascade)
+
+    nome      String
+    descricao String?
+    nota      Float
+    peso      Float   @default(1.0)
+
+    @@index([avaliacaoId])
+    @@map("criterios_avaliacao")
+}
+
+model Notificacao {
+    id        String  @id @default(cuid())
+    usuarioId String
+    usuario   Usuario @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+
+    tipo     String // COMENTARIO, BANCA_AGENDADA, TRABALHO_SUBMETIDO, etc
+    titulo   String
+    mensagem String @db.Text
+
+    lida Boolean @default(false)
+    link String? // URL para redirecionar
+
+    createdAt DateTime @default(now())
+
+    @@index([usuarioId, lida])
+    @@map("notificacoes")
+}
+
+// Audit Log para rastreabilidade
+model AuditLog {
+    id        String  @id @default(cuid())
+    usuarioId String
+    usuario   Usuario @relation(fields: [usuarioId], references: [id])
+
+    acao       String // CREATE, UPDATE, DELETE, LOGIN, etc
+    entidade   String // TRABALHO, BANCA, USUARIO, etc
+    entidadeId String?
+
+    detalhes  Json? // Dados adicionais sobre a ação
+    ipAddress String?
+    userAgent String?
+
+    createdAt DateTime @default(now())
+
+    @@index([usuarioId])
+    @@index([createdAt])
+    @@map("audit_logs")
+}
+
+// Configurações do Sistema
+model ConfiguracaoSistema {
+    id        String  @id @default(cuid())
+    chave     String  @unique
+    valor     String  @db.Text
+    descricao String?
+
+    updatedAt DateTime @updatedAt
+
+    @@map("configuracoes_sistema")
+}
