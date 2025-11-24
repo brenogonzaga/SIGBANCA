@@ -40,15 +40,21 @@ enum PapelBanca {
     SUPLENTE
 }
 
+enum TipoDocumento {
+    ARQUIVO // Upload de arquivo (MinIO)
+    URL_EXTERNA // Link externo (Google Docs, OneDrive, etc.)
+}
+
 model Usuario {
-    id       String   @id @default(cuid())
-    email    String   @unique
-    senha    String
-    nome     String
-    cpf      String?  @unique
-    telefone String?
-    role     UserRole @default(ALUNO)
-    ativo    Boolean  @default(true)
+    id        String    @id @default(cuid())
+    email     String    @unique
+    senha     String
+    nome      String
+    cpf       String?   @unique
+    telefone  String?
+    role      UserRole  @default(ALUNO)
+    ativo     Boolean   @default(true)
+    deletedAt DateTime?
 
     // Dados específicos do aluno
     matricula    String?   @unique
@@ -88,6 +94,7 @@ model Trabalho {
     curso         String
     status        TrabalhoStatus @default(EM_ELABORACAO)
     versaoAtual   Int            @default(0)
+    deletedAt     DateTime?
 
     // Relacionamentos
     alunoId String
@@ -118,10 +125,19 @@ model VersaoDocumento {
     trabalhoId   String
     trabalho     Trabalho @relation(fields: [trabalhoId], references: [id], onDelete: Cascade)
 
-    nomeArquivo String
-    arquivoUrl  String
-    tamanho     Int
-    mimeType    String
+    // Tipo de documento (arquivo ou URL externa)
+    tipoDocumento TipoDocumento @default(ARQUIVO)
+
+    // Campos para ARQUIVO (upload MinIO)
+    nomeArquivo String?
+    arquivoUrl  String?
+    tamanho     Int?
+    mimeType    String?
+
+    // Campos para URL_EXTERNA (Google Docs, OneDrive, etc.)
+    urlExterna      String? // URL do documento externo
+    plataforma      String? // "google_docs", "onedrive", "dropbox", etc.
+    tituloDocumento String? // Nome/título do documento externo
 
     changelog String? @db.Text
 
@@ -134,6 +150,7 @@ model VersaoDocumento {
 
     @@unique([trabalhoId, numeroVersao])
     @@index([trabalhoId])
+    @@index([tipoDocumento])
     @@map("versoes_documento")
 }
 
@@ -178,7 +195,8 @@ model Banca {
     membros MembroBanca[]
     ataUrl  String?
 
-    observacoes String? @db.Text
+    observacoes String?   @db.Text
+    deletedAt   DateTime?
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt

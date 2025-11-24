@@ -66,9 +66,13 @@ export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
   async function loadTrabalhos() {
     setIsLoadingTrabalhos(true);
     try {
-      const response = await fetch("/api/trabalhos", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      // Carregar apenas trabalhos aptos para agendar banca (APROVADO_ORIENTADOR ou AGUARDANDO_BANCA)
+      const response = await fetch(
+        "/api/trabalhos?status=APROVADO_ORIENTADOR,AGUARDANDO_BANCA",
+        {
+          headers: { Authorization: `Bearer ${token}` },
+        }
+      );
       if (response.ok) {
         const data = await response.json();
         setTrabalhos(data);

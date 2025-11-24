@@ -4,6 +4,7 @@ import prisma from "@/app/lib/prisma";
 import { hashPassword } from "@/app/lib/auth";
 import { UserRole } from "@prisma/client";
 import { VALIDATION_CONFIG } from "@/app/config";
+import { getRequestMetadata } from "@/app/lib/requestMetadata";
 
 const signupSchema = z.object({
   email: z.string().email("Email inválido"),
@@ -81,12 +82,16 @@ export async function POST(request: NextRequest) {
       },
     });
 
+    const { ipAddress, userAgent } = getRequestMetadata(request);
+
     await prisma.auditLog.create({
       data: {
         usuarioId: usuario.id,
         acao: "CREATE",
         entidade: "USUARIO",
         entidadeId: usuario.id,
+        ipAddress,
+        userAgent,
         detalhes: {
           evento: "Cadastro realizado",
           role: usuario.role,

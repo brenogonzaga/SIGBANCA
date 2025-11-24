@@ -1,17 +1,14 @@
 import { NextResponse } from "next/server";
-import { PrismaClient, TrabalhoStatus } from "@prisma/client";
+import { prisma } from "@/app/lib/prisma";
 import { withAuthContext } from "@/app/lib/authMiddleware";
+import { updateTrabalhoSchema } from "@/app/lib/validationSchemas";
 import { z } from "zod";
-
-const prisma = new PrismaClient();
-
-const updateTrabalhoSchema = z.object({
-  titulo: z.string().optional(),
-  descricao: z.string().optional(),
-  curso: z.string().optional(),
-  status: z.nativeEnum(TrabalhoStatus).optional(),
-  orientadorId: z.string().optional(),
-});
+import {
+  canTransition,
+  canEditTrabalho,
+  getTransitionDescription,
+} from "@/app/lib/trabalhoStateMachine";
+import { getRequestMetadata } from "@/app/lib/requestMetadata";
 
 export const GET = withAuthContext<{ params: Promise<{ id: string }> }>(
   async (request, user, { params }) => {
@@ -122,6 +119,11 @@ export const PUT = withAuthContext<{ params: Promise<{ id: string }> }>(
         include: {
           aluno: true,
           orientador: true,
+          banca: {
+            include: {
+              membros: true,
+            },
+          },
         },
       });
 
@@ -142,11 +144,97 @@ export const PUT = withAuthContext<{ params: Promise<{ id: string }> }>(
       const body = await request.json();
       const validatedData = updateTrabalhoSchema.parse(body);
 
-      if (user.role === "ALUNO" && (validatedData.status || validatedData.orientadorId)) {
-        return NextResponse.json(
-          { error: "Aluno não pode alterar status ou orientador" },
-          { status: 403 }
+      if (user.role === "ALUNO") {
+        if (validatedData.orientadorId) {
+          return NextResponse.json(
+            { error: "Aluno não pode alterar o orientador" },
+            { status: 403 }
+          );
+        }
+
+        if (!canEditTrabalho(trabalho.status) && !validatedData.status) {
+          return NextResponse.json(
+            { error: `Trabalho não pode ser editado no estado: ${trabalho.status}` },
+            { status: 400 }
+          );
+        }
+      }
+
+      if (validatedData.status && validatedData.status !== trabalho.status) {
+        const hasBanca = !!trabalho.banca && trabalho.banca.membros.length > 0;
+
+        const transitionValidation = canTransition(
+          trabalho.status,
+          validatedData.status,
+          user.role,
+          hasBanca
         );
+
+        if (!transitionValidation.valid) {
+          return NextResponse.json(
+            {
+              error: transitionValidation.error,
+              currentStatus: trabalho.status,
+              attemptedStatus: validatedData.status,
+            },
+            { status: 400 }
+          );
+        }
+
+        const { ipAddress, userAgent } = getRequestMetadata(request);
+
+        await prisma.auditLog.create({
+          data: {
+            usuarioId: user.userId,
+            acao: "UPDATE_STATUS",
+            entidade: "TRABALHO",
+            entidadeId: trabalho.id,
+            ipAddress,
+            userAgent,
+            detalhes: {
+              statusAnterior: trabalho.status,
+              novoStatus: validatedData.status,
+              descricao: getTransitionDescription(trabalho.status, validatedData.status),
+            },
+          },
+        });
+        const notificacoes = [];
+
+        if (user.userId !== trabalho.alunoId) {
+          notificacoes.push({
+            usuarioId: trabalho.alunoId,
+            tipo: "MUDANCA_STATUS",
+            titulo: "Status do trabalho alterado",
+            mensagem: `Seu trabalho "${
+              trabalho.titulo
+            }" mudou de status: ${getTransitionDescription(
+              trabalho.status,
+              validatedData.status
+            )}`,
+            link: `/trabalhos/${trabalho.id}`,
+          });
+        }
+
+        if (user.userId !== trabalho.orientadorId) {
+          notificacoes.push({
+            usuarioId: trabalho.orientadorId,
+            tipo: "MUDANCA_STATUS",
+            titulo: "Status do trabalho orientado alterado",
+            mensagem: `O trabalho "${
+              trabalho.titulo
+            }" mudou de status: ${getTransitionDescription(
+              trabalho.status,
+              validatedData.status
+            )}`,
+            link: `/trabalhos/${trabalho.id}`,
+          });
+        }
+
+        if (notificacoes.length > 0) {
+          await prisma.notificacao.createMany({
+            data: notificacoes,
+          });
+        }
       }
 
       const trabalhoAtualizado = await prisma.trabalho.update({

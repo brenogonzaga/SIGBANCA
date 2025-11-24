@@ -9,7 +9,9 @@ export const GET = withAuth(async (request: NextRequest, user) => {
     const role = searchParams.get("role");
     const ativo = searchParams.get("ativo");
 
-    const where: Prisma.UsuarioWhereInput = {};
+    const where: Prisma.UsuarioWhereInput = {
+      deletedAt: null,
+    };
 
     if (role) {
       const roles = role.split(",").map((r) => r.trim());

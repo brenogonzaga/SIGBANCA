@@ -28,8 +28,11 @@ export const GET = withAuthContext<{ params: Promise<{ id: string }> }>(
         return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
       }
 
-      const usuario = await prisma.usuario.findUnique({
-        where: { id },
+      const usuario = await prisma.usuario.findFirst({
+        where: {
+          id,
+          deletedAt: null,
+        },
         select: {
           id: true,
           email: true,
@@ -137,8 +140,11 @@ export const DELETE = withAuthContext<{ params: Promise<{ id: string }> }>(
         );
       }
 
-      const usuario = await prisma.usuario.findUnique({
-        where: { id },
+      const usuario = await prisma.usuario.findFirst({
+        where: {
+          id,
+          deletedAt: null,
+        },
         select: { nome: true },
       });
 
@@ -148,10 +154,13 @@ export const DELETE = withAuthContext<{ params: Promise<{ id: string }> }>(
 
       await prisma.usuario.update({
         where: { id },
-        data: { ativo: false },
+        data: {
+          deletedAt: new Date(),
+          ativo: false,
+        },
       });
 
-      return NextResponse.json({ message: "Usuário desativado com sucesso" });
+      return NextResponse.json({ message: "Usuário deletado com sucesso" });
     } catch (error) {
       console.error("Erro ao deletar usuário:", error);
       return NextResponse.json({ error: "Erro ao deletar usuário" }, { status: 500 });

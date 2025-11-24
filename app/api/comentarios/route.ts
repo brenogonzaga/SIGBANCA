@@ -1,13 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/app/lib/prisma";
 import { withAuth } from "@/app/lib/authMiddleware";
+import { createComentarioSchema } from "@/app/lib/validationSchemas";
 import { z } from "zod";
-
-const createComentarioSchema = z.object({
-  texto: z.string().min(1, "Comentário não pode ser vazio"),
-  versaoId: z.string(),
-  parentId: z.string().optional(),
-});
 
 export const POST = withAuth(async (request: NextRequest, user) => {
   try {

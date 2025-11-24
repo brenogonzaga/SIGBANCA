@@ -5,9 +5,10 @@ import { hashPassword } from "@/app/lib/auth";
 import { Prisma, UserRole } from "@prisma/client";
 import { z } from "zod";
 import { VALIDATION_CONFIG } from "@/app/config";
+import { getRequestMetadata } from "@/app/lib/requestMetadata";
 
 const createUsuarioSchema = z.object({
-  email: z.string().email("Email inválido"),
+  email: z.email("Email inválido"),
   senha: z
     .string()
     .min(
@@ -107,12 +108,16 @@ export const POST = withAuth(async (request: NextRequest, user) => {
       },
     });
 
+    const { ipAddress, userAgent } = getRequestMetadata(request);
+
     await prisma.auditLog.create({
       data: {
         usuarioId: user.userId,
         acao: "CREATE",
         entidade: "Usuario",
         entidadeId: novoUsuario.id,
+        ipAddress,
+        userAgent,
         detalhes: {
           descricao: `Usuário ${novoUsuario.nome} (${novoUsuario.role}) cadastrado por ${user.nome}`,
         },

@@ -1,11 +1,15 @@
-export type UserRole = "aluno" | "professor" | "coordenador";
+export type UserRole = "ALUNO" | "PROFESSOR" | "COORDENADOR" | "ADMIN";
 
 export type TrabalhoStatus =
-  | "em_elaboracao"
-  | "submetido"
-  | "em_revisao"
-  | "aprovado"
-  | "reprovado";
+  | "EM_ELABORACAO"
+  | "SUBMETIDO"
+  | "EM_REVISAO"
+  | "APROVADO_ORIENTADOR"
+  | "AGUARDANDO_BANCA"
+  | "BANCA_AGENDADA"
+  | "APROVADO"
+  | "REPROVADO"
+  | "CANCELADO";
 
 export interface Usuario {
   id: string;
@@ -32,13 +36,32 @@ export interface Trabalho {
   banca?: Banca;
 }
 
+export type TipoDocumento = "ARQUIVO" | "URL_EXTERNA";
+
+export type PlataformaExterna =
+  | "google_docs"
+  | "google_drive"
+  | "onedrive"
+  | "dropbox"
+  | "overleaf"
+  | "notion"
+  | "outro";
+
 export interface VersaoDocumento {
   id: string;
   trabalhoId: string;
   numeroVersao: number;
-  arquivoUrl: string;
-  nomeArquivo: string;
-  tamanho: number;
+  tipoDocumento: TipoDocumento;
+  // Campos para ARQUIVO
+  arquivoUrl?: string;
+  nomeArquivo?: string;
+  tamanho?: number;
+  mimeType?: string;
+  // Campos para URL_EXTERNA
+  urlExterna?: string;
+  plataforma?: PlataformaExterna;
+  tituloDocumento?: string;
+  // Campos comuns
   dataUpload: Date;
   uploadPor: Usuario;
   comentarios: Comentario[];
@@ -52,14 +75,14 @@ export interface Banca {
   horario: string;
   local: string;
   membros: MembroBanca[];
-  status: "agendada" | "realizada" | "cancelada";
+  status: "AGENDADA" | "EM_ANDAMENTO" | "REALIZADA" | "CANCELADA";
   ataUrl?: string;
 }
 
 export interface MembroBanca {
   id: string;
   usuario: Usuario;
-  papel: "orientador" | "avaliador" | "suplente";
+  papel: "ORIENTADOR" | "AVALIADOR" | "SUPLENTE";
   avaliacao?: Avaliacao;
 }
 

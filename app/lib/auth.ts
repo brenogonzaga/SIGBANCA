@@ -2,7 +2,11 @@ import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import { UserRole } from "@prisma/client";
 
-const JWT_SECRET = process.env.JWT_SECRET || "fallback-secret-change-in-production";
+if (!process.env.JWT_SECRET && process.env.NODE_ENV === "production") {
+  throw new Error("JWT_SECRET must be defined in production environment");
+}
+
+const JWT_SECRET = process.env.JWT_SECRET || "development-secret-do-not-use-in-production";
 const SALT_ROUNDS = 10;
 
 export async function hashPassword(password: string): Promise<string> {

@@ -2,22 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/app/lib/prisma";
 import { withAuth } from "@/app/lib/authMiddleware";
 import { Prisma, BancaStatus } from "@prisma/client";
+import { createBancaSchema } from "@/app/lib/validationSchemas";
 import { z } from "zod";
-
-const createBancaSchema = z.object({
-  trabalhoId: z.string(),
-  data: z.string(),
-  horario: z.string(),
-  local: z.string(),
-  modalidade: z.enum(["PRESENCIAL", "REMOTO", "HIBRIDO"]),
-  linkReuniao: z.string().optional(),
-  membros: z.array(
-    z.object({
-      usuarioId: z.string(),
-      papel: z.enum(["ORIENTADOR", "AVALIADOR", "SUPLENTE"]),
-    })
-  ),
-});
 
 export const GET = withAuth(async (request: NextRequest, user) => {
   try {
@@ -109,6 +95,18 @@ export const POST = withAuth(async (request: NextRequest, user) => {
       return NextResponse.json({ error: "Trabalho não encontrado" }, { status: 404 });
     }
 
+    // Verificar se o trabalho está em um status que permite agendar banca
+    const statusPermitidos = ["APROVADO_ORIENTADOR", "AGUARDANDO_BANCA"];
+    if (!statusPermitidos.includes(trabalho.status)) {
+      return NextResponse.json(
+        {
+          error: "O trabalho precisa estar aprovado pelo orientador para agendar banca",
+          statusAtual: trabalho.status,
+        },
+        { status: 400 }
+      );
+    }
+
     const bancaExistente = await prisma.banca.findFirst({
       where: {
         trabalhoId: data.trabalhoId,
@@ -123,34 +121,95 @@ export const POST = withAuth(async (request: NextRequest, user) => {
       );
     }
 
-    const banca = await prisma.banca.create({
-      data: {
-        trabalhoId: data.trabalhoId,
-        data: new Date(data.data),
-        horario: data.horario,
-        local: data.local,
-        modalidade: data.modalidade,
-        linkReuniao: data.linkReuniao,
-        status: "AGENDADA",
-        membros: {
-          create: data.membros.map((membro) => ({
-            usuarioId: membro.usuarioId,
-            papel: membro.papel,
-          })),
+    const dataDate = new Date(data.data);
+    if (dataDate < new Date()) {
+      return NextResponse.json(
+        { error: "A data da banca deve ser no futuro" },
+        { status: 400 }
+      );
+    }
+
+    const membroIds = data.membros.map((m) => m.usuarioId);
+    const uniqueIds = new Set(membroIds);
+    if (membroIds.length !== uniqueIds.size) {
+      return NextResponse.json(
+        { error: "Um mesmo membro não pode ser adicionado múltiplas vezes" },
+        { status: 400 }
+      );
+    }
+
+    const startOfDay = new Date(dataDate);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(dataDate);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const conflitos = await prisma.membroBanca.findMany({
+      where: {
+        usuarioId: { in: membroIds },
+        banca: {
+          status: { in: ["AGENDADA", "EM_ANDAMENTO"] },
+          data: {
+            gte: startOfDay,
+            lt: endOfDay,
+          },
         },
       },
       include: {
-        trabalho: {
-          include: {
-            aluno: true,
-          },
-        },
-        membros: {
-          include: {
-            usuario: true,
-          },
-        },
+        usuario: { select: { nome: true } },
+        banca: { select: { horario: true, trabalhoId: true } },
       },
+    });
+
+    if (conflitos.length > 0) {
+      const professoresComConflito = conflitos
+        .map((c) => `${c.usuario.nome} (${c.banca.horario})`)
+        .join(", ");
+      return NextResponse.json(
+        {
+          error: "Conflito de horário detectado",
+          detalhes: `Os seguintes membros já possuem banca agendada neste dia: ${professoresComConflito}`,
+        },
+        { status: 409 }
+      );
+    }
+
+    const banca = await prisma.$transaction(async (tx) => {
+      const novaBanca = await tx.banca.create({
+        data: {
+          trabalhoId: data.trabalhoId,
+          data: dataDate,
+          horario: data.horario,
+          local: data.local,
+          modalidade: data.modalidade,
+          linkReuniao: data.linkReuniao,
+          status: "AGENDADA",
+          membros: {
+            create: data.membros.map((membro) => ({
+              usuarioId: membro.usuarioId,
+              papel: membro.papel,
+            })),
+          },
+        },
+        include: {
+          trabalho: {
+            include: {
+              aluno: true,
+            },
+          },
+          membros: {
+            include: {
+              usuario: true,
+            },
+          },
+        },
+      });
+
+      await tx.trabalho.update({
+        where: { id: data.trabalhoId },
+        data: { status: "BANCA_AGENDADA" },
+      });
+
+      return novaBanca;
     });
 
     return NextResponse.json(banca, { status: 201 });

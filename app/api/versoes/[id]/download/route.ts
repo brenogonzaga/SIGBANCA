@@ -19,6 +19,14 @@ export const GET = withAuthContext<{ params: Promise<{ id: string }> }>(
         return NextResponse.json({ error: "Versão não encontrada" }, { status: 404 });
       }
 
+      // Verificar se é um documento com arquivo (não URL externa)
+      if (!versao.arquivoUrl) {
+        return NextResponse.json(
+          { error: "Esta versão não possui arquivo para download (URL externa)" },
+          { status: 400 }
+        );
+      }
+
       const urlParts = versao.arquivoUrl.split("/");
       const bucketIndex = urlParts.findIndex((part) => part === "sigbanca-files");
       const filePath = urlParts.slice(bucketIndex + 1).join("/");

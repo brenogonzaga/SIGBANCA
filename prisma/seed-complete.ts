@@ -50,7 +50,7 @@ async function main() {
     data: {
       email: "coordenador@ifam.edu.br",
       senha: senhaHash,
-      nome: "Dr. Carlos Eduardo Silva",
+      nome: "Carlos Eduardo Silva",
       role: "COORDENADOR",
       cpf: "222.222.222-22",
       telefone: "(92) 99999-1001",
@@ -66,7 +66,7 @@ async function main() {
     data: {
       email: "coord.ti@ifam.edu.br",
       senha: senhaHash,
-      nome: "Dra. Mariana Costa Santos",
+      nome: "Mariana Costa Santos",
       role: "COORDENADOR",
       cpf: "223.223.223-23",
       telefone: "(92) 99999-1002",
@@ -84,7 +84,7 @@ async function main() {
       data: {
         email: "maria.santos@ifam.edu.br",
         senha: senhaHash,
-        nome: "Dra. Maria Fernanda Santos",
+        nome: "Maria Fernanda Santos",
         role: "PROFESSOR",
         cpf: "333.333.333-33",
         telefone: "(92) 99999-2001",
@@ -99,7 +99,7 @@ async function main() {
       data: {
         email: "joao.oliveira@ifam.edu.br",
         senha: senhaHash,
-        nome: "Dr. João Pedro Oliveira",
+        nome: "João Pedro Oliveira",
         role: "PROFESSOR",
         cpf: "334.334.334-34",
         telefone: "(92) 99999-2002",
@@ -114,7 +114,7 @@ async function main() {
       data: {
         email: "ana.rodrigues@ifam.edu.br",
         senha: senhaHash,
-        nome: "Dra. Ana Paula Rodrigues",
+        nome: "Ana Paula Rodrigues",
         role: "PROFESSOR",
         cpf: "335.335.335-35",
         telefone: "(92) 99999-2003",
@@ -129,7 +129,7 @@ async function main() {
       data: {
         email: "ricardo.silva@ifam.edu.br",
         senha: senhaHash,
-        nome: "Dr. Ricardo Almeida Silva",
+        nome: "Ricardo Almeida Silva",
         role: "PROFESSOR",
         cpf: "336.336.336-36",
         telefone: "(92) 99999-2004",
@@ -144,7 +144,7 @@ async function main() {
       data: {
         email: "fernanda.lima@ifam.edu.br",
         senha: senhaHash,
-        nome: "Dra. Fernanda Maria Lima",
+        nome: "Fernanda Maria Lima",
         role: "PROFESSOR",
         cpf: "337.337.337-37",
         telefone: "(92) 99999-2005",
@@ -159,7 +159,7 @@ async function main() {
       data: {
         email: "paulo.mendes@ifam.edu.br",
         senha: senhaHash,
-        nome: "Dr. Paulo César Mendes",
+        nome: "Paulo César Mendes",
         role: "PROFESSOR",
         cpf: "338.338.338-38",
         telefone: "(92) 99999-2006",
@@ -178,7 +178,7 @@ async function main() {
       data: {
         email: "pedro.costa@ifam.edu.br",
         senha: senhaHash,
-        nome: "Dr. Pedro Henrique Costa",
+        nome: "Pedro Henrique Costa",
         role: "PROFESSOR_BANCA",
         cpf: "441.441.441-41",
         telefone: "(92) 99999-3001",
@@ -193,7 +193,7 @@ async function main() {
       data: {
         email: "ana.lima@ifam.edu.br",
         senha: senhaHash,
-        nome: "Dra. Ana Carolina Lima",
+        nome: "Ana Carolina Lima",
         role: "PROFESSOR_BANCA",
         cpf: "442.442.442-42",
         telefone: "(92) 99999-3002",
@@ -208,7 +208,7 @@ async function main() {
       data: {
         email: "roberto.santos@ifam.edu.br",
         senha: senhaHash,
-        nome: "Dr. Roberto Carlos Santos",
+        nome: "Roberto Carlos Santos",
         role: "PROFESSOR_BANCA",
         cpf: "443.443.443-43",
         telefone: "(92) 99999-3003",
@@ -223,7 +223,7 @@ async function main() {
       data: {
         email: "juliana.sousa@ifam.edu.br",
         senha: senhaHash,
-        nome: "Dra. Juliana Sousa Martins",
+        nome: "Juliana Sousa Martins",
         role: "PROFESSOR_BANCA",
         cpf: "444.444.444-44",
         telefone: "(92) 99999-3004",
@@ -238,7 +238,7 @@ async function main() {
       data: {
         email: "marcos.pereira@ifam.edu.br",
         senha: senhaHash,
-        nome: "Dr. Marcos Vinícius Pereira",
+        nome: "Marcos Vinícius Pereira",
         role: "PROFESSOR_BANCA",
         cpf: "445.445.445-45",
         telefone: "(92) 99999-3005",
@@ -451,18 +451,46 @@ async function main() {
     const numVersoes = Math.floor(Math.random() * 3) + 1; // 1 a 3 versões
 
     for (let v = 1; v <= numVersoes; v++) {
-      await prisma.versaoDocumento.create({
-        data: {
-          trabalhoId: trabalho.id,
-          uploadPorId: aluno.id,
-          numeroVersao: v,
-          nomeArquivo: `tcc_v${v}_${aluno.nome.toLowerCase().replace(/\s+/g, "_")}.pdf`,
-          arquivoUrl: `/uploads/trabalhos/${trabalho.id}/v${v}/documento.pdf`,
-          tamanho: Math.floor(Math.random() * 2000000) + 500000, // 500KB a 2.5MB
-          mimeType: "application/pdf",
-          changelog: v === 1 ? "Versão inicial do TCC" : `Versão ${v} - Correções e melhorias`,
-        },
-      });
+      // Alternar entre ARQUIVO e URL_EXTERNA para demonstração
+      const usarUrlExterna = v > 1 && Math.random() > 0.7; // 30% chance de URL externa após v1
+
+      if (usarUrlExterna) {
+        const plataformas = ["google_docs", "google_drive", "onedrive", "overleaf"] as const;
+        const plataforma = plataformas[Math.floor(Math.random() * plataformas.length)];
+        const urls: Record<string, string> = {
+          google_docs: "https://docs.google.com/document/d/1abc123xyz",
+          google_drive: "https://drive.google.com/file/d/1abc123xyz",
+          onedrive: "https://onedrive.live.com/view.aspx?id=abc123",
+          overleaf: "https://www.overleaf.com/project/abc123xyz",
+        };
+
+        await prisma.versaoDocumento.create({
+          data: {
+            trabalhoId: trabalho.id,
+            uploadPorId: aluno.id,
+            numeroVersao: v,
+            tipoDocumento: "URL_EXTERNA",
+            urlExterna: urls[plataforma],
+            plataforma: plataforma,
+            tituloDocumento: `TCC ${aluno.nome} - Versão ${v}`,
+            changelog: `Versão ${v} - Documento compartilhado via ${plataforma.replace("_", " ")}`,
+          },
+        });
+      } else {
+        await prisma.versaoDocumento.create({
+          data: {
+            trabalhoId: trabalho.id,
+            uploadPorId: aluno.id,
+            numeroVersao: v,
+            tipoDocumento: "ARQUIVO",
+            nomeArquivo: `tcc_v${v}_${aluno.nome.toLowerCase().replace(/\s+/g, "_")}.pdf`,
+            arquivoUrl: `/uploads/trabalhos/${trabalho.id}/v${v}/documento.pdf`,
+            tamanho: Math.floor(Math.random() * 2000000) + 500000, // 500KB a 2.5MB
+            mimeType: "application/pdf",
+            changelog: v === 1 ? "Versão inicial do TCC" : `Versão ${v} - Correções e melhorias`,
+          },
+        });
+      }
     }
   }
 

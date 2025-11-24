@@ -32,12 +32,34 @@ ChartJS.register(
 
 interface DashboardStats {
   totalTrabalhos: number;
+  trabalhosEmElaboracao: number;
+  trabalhosSubmetidos: number;
   trabalhosEmRevisao: number;
   trabalhosAprovados: number;
+  trabalhosReprovados: number;
+  trabalhosCancelados: number;
   bancasAgendadas: number;
+  bancasRealizadas: number;
+  bancasEmAndamento: number;
+  pendencias: number;
+  distribuicaoPorStatus: Array<{ status: string; quantidade: number; label: string }>;
   distribuicaoPorCurso: Array<{ curso: string; quantidade: number }>;
+  estatisticasPorCurso: Array<{
+    curso: string;
+    total: number;
+    aprovados: number;
+    reprovados: number;
+    taxaAprovacao: string;
+  }>;
   temasFrequentes: Array<{ tema: string; quantidade: number }>;
-  mediaTempoPorEtapa: Array<{ etapa: string; dias: number }>;
+  atividadesRecentes: Array<{
+    acao: string;
+    entidade: string;
+    createdAt: string;
+    usuario?: {
+      nome: string;
+    };
+  }>;
 }
 
 export function Dashboard() {
@@ -121,11 +143,21 @@ export function Dashboard() {
   ];
 
   const doughnutData = {
-    labels: ["Em Elaboração", "Em Revisão", "Aprovados", "Reprovados"],
+    labels: stats.distribuicaoPorStatus.map((item) => item.label),
     datasets: [
       {
-        data: [stats.totalTrabalhos, stats.trabalhosEmRevisao, stats.trabalhosAprovados, 5],
-        backgroundColor: ["#3b82f6", "#f59e0b", "#10b981", "#ef4444"],
+        data: stats.distribuicaoPorStatus.map((item) => item.quantidade),
+        backgroundColor: [
+          "#3b82f6", // Em Elaboração
+          "#f59e0b", // Submetido
+          "#f97316", // Em Revisão
+          "#8b5cf6", // Aprovado Orientador
+          "#6366f1", // Aguardando Banca
+          "#06b6d4", // Banca Agendada
+          "#10b981", // Aprovado
+          "#ef4444", // Reprovado
+          "#6b7280", // Cancelado
+        ],
       },
     ],
   };
@@ -153,19 +185,22 @@ export function Dashboard() {
     ],
   };
 
-  const timeData = {
-    labels: stats.mediaTempoPorEtapa.map((item) => item.etapa),
-    datasets: [
-      {
-        label: "Dias médios",
-        data: stats.mediaTempoPorEtapa.map((item) => item.dias),
-        borderColor: "#8b5cf6",
-        backgroundColor: "rgba(139, 92, 246, 0.1)",
-        fill: true,
-        tension: 0.4,
-      },
-    ],
-  };
+  // Gráfico de taxa de aprovação por curso
+  const taxaAprovacaoData = stats.estatisticasPorCurso
+    ? {
+        labels: stats.estatisticasPorCurso.map((item) => item.curso),
+        datasets: [
+          {
+            label: "Taxa de Aprovação (%)",
+            data: stats.estatisticasPorCurso.map((item) => parseFloat(item.taxaAprovacao)),
+            borderColor: "#8b5cf6",
+            backgroundColor: "rgba(139, 92, 246, 0.1)",
+            fill: true,
+            tension: 0.4,
+          },
+        ],
+      }
+    : null;
 
   return (
     <div className="space-y-6">
@@ -227,15 +262,51 @@ export function Dashboard() {
           </div>
         </Card>
 
+        {taxaAprovacaoData && (
+          <Card>
+            <div className="p-6">
+              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
+                Taxa de Aprovação por Curso
+              </h3>
+              <Line
+                data={taxaAprovacaoData}
+                options={{ responsive: true, maintainAspectRatio: true }}
+              />
+            </div>
+          </Card>
+        )}
+      </div>
+
+      {/* Feed de Atividades Recentes */}
+      {stats.atividadesRecentes && stats.atividadesRecentes.length > 0 && (
         <Card>
           <div className="p-6">
             <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Tempo Médio por Etapa (dias)
+              Atividades Recentes
             </h3>
-            <Line data={timeData} options={{ responsive: true, maintainAspectRatio: true }} />
+            <div className="space-y-3">
+              {stats.atividadesRecentes.slice(0, 10).map((atividade, index) => (
+                <div
+                  key={index}
+                  className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                >
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
+                      {atividade.usuario?.nome || "Sistema"}
+                    </p>
+                    <p className="text-xs text-gray-600 dark:text-gray-400">
+                      {atividade.acao} - {atividade.entidade}
+                    </p>
+                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
+                      {new Date(atividade.createdAt).toLocaleString("pt-BR")}
+                    </p>
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
         </Card>
-      </div>
+      )}
     </div>
   );
 }

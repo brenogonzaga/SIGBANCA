@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Trabalho } from "@/app/types";
+import { Trabalho, PlataformaExterna, TipoDocumento } from "@/app/types";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -19,9 +19,22 @@ import {
   Clock,
   FileUp,
   X,
+  Link as LinkIcon,
+  ExternalLink,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+
+// Opções de plataformas externas
+const PLATAFORMAS_OPTIONS: { value: PlataformaExterna; label: string }[] = [
+  { value: "google_docs", label: "Google Docs" },
+  { value: "google_drive", label: "Google Drive" },
+  { value: "onedrive", label: "OneDrive" },
+  { value: "dropbox", label: "Dropbox" },
+  { value: "overleaf", label: "Overleaf" },
+  { value: "notion", label: "Notion" },
+  { value: "outro", label: "Outro" },
+];
 
 interface TrabalhoDetailProps {
   trabalho: Trabalho;
@@ -38,25 +51,39 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
   const [novoComentario, setNovoComentario] = useState<{ [key: string]: string }>({});
   const [isAddingComment, setIsAddingComment] = useState<{ [key: string]: boolean }>({});
   const [showUploadModal, setShowUploadModal] = useState(false);
+  // Tipo de upload: arquivo ou URL
+  const [tipoUpload, setTipoUpload] = useState<TipoDocumento>("ARQUIVO");
   const [uploadFile, setUploadFile] = useState<File | null>(null);
+  // Campos para URL externa
+  const [urlExterna, setUrlExterna] = useState("");
+  const [plataforma, setPlataforma] = useState<PlataformaExterna>("google_docs");
+  const [tituloDocumento, setTituloDocumento] = useState("");
   const [uploadChangelog, setUploadChangelog] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
 
   const handleCloseUploadModal = () => {
-    const hasData = uploadFile !== null || uploadChangelog.trim() !== "";
+    const hasFileData = uploadFile !== null;
+    const hasUrlData = urlExterna.trim() !== "" || tituloDocumento.trim() !== "";
+    const hasData = hasFileData || hasUrlData || uploadChangelog.trim() !== "";
 
     if (hasData) {
       if (window.confirm("Você tem dados não salvos. Deseja realmente fechar?")) {
-        setShowUploadModal(false);
-        setUploadFile(null);
-        setUploadChangelog("");
+        resetUploadModal();
       }
     } else {
-      setShowUploadModal(false);
-      setUploadFile(null);
-      setUploadChangelog("");
+      resetUploadModal();
     }
+  };
+
+  const resetUploadModal = () => {
+    setShowUploadModal(false);
+    setTipoUpload("ARQUIVO");
+    setUploadFile(null);
+    setUrlExterna("");
+    setPlataforma("google_docs");
+    setTituloDocumento("");
+    setUploadChangelog("");
   };
 
   const canUpload =
@@ -69,7 +96,18 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
     setVersaoExpandida(versaoExpandida === versaoId ? null : versaoId);
   };
 
-  const handleDownload = async (versaoId: string, nomeArquivo: string) => {
+  const handleDownload = async (
+    versaoId: string,
+    nomeArquivo: string,
+    urlExternaVersao?: string
+  ) => {
+    // Se for URL externa, abrir diretamente
+    if (urlExternaVersao) {
+      window.open(urlExternaVersao, "_blank");
+      showToast("Abrindo documento externo...", "success");
+      return;
+    }
+
     setDownloadingId(versaoId);
     try {
       const response = await fetch(`/api/versoes/${versaoId}/download`, {
@@ -157,9 +195,29 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
   };
 
   const handleUploadNewVersion = async () => {
-    if (!uploadFile) {
-      showToast("Selecione um arquivo", "warning");
-      return;
+    // Validação baseada no tipo de upload
+    if (tipoUpload === "ARQUIVO") {
+      if (!uploadFile) {
+        showToast("Selecione um arquivo", "warning");
+        return;
+      }
+    } else {
+      // URL_EXTERNA
+      if (!urlExterna.trim()) {
+        showToast("Digite a URL do documento", "warning");
+        return;
+      }
+      if (!tituloDocumento.trim()) {
+        showToast("Digite o título do documento", "warning");
+        return;
+      }
+      // Validação simples de URL
+      try {
+        new URL(urlExterna);
+      } catch {
+        showToast("URL inválida. Informe uma URL completa (ex: https://...)", "error");
+        return;
+      }
     }
 
     if (!uploadChangelog.trim()) {
@@ -169,25 +227,45 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
 
     setIsUploading(true);
     try {
-      const formData = new FormData();
-      formData.append("arquivo", uploadFile);
-      formData.append("trabalhoId", trabalho.id);
-      formData.append("changelog", uploadChangelog);
+      let response: Response;
 
-      const response = await fetch("/api/versoes", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-        body: formData,
-      });
+      if (tipoUpload === "ARQUIVO") {
+        // Upload de arquivo via FormData
+        const formData = new FormData();
+        formData.append("arquivo", uploadFile!);
+        formData.append("trabalhoId", trabalho.id);
+        formData.append("changelog", uploadChangelog);
+
+        response = await fetch("/api/versoes", {
+          method: "POST",
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+          body: formData,
+        });
+      } else {
+        // Envio de URL via JSON
+        response = await fetch("/api/versoes", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify({
+            tipoDocumento: "URL_EXTERNA",
+            trabalhoId: trabalho.id,
+            urlExterna: urlExterna.trim(),
+            plataforma,
+            tituloDocumento: tituloDocumento.trim(),
+            changelog: uploadChangelog.trim(),
+          }),
+        });
+      }
 
       if (response.ok) {
         const novaVersao = await response.json();
         showToast("Nova versão enviada com sucesso!", "success");
-        setShowUploadModal(false);
-        setUploadFile(null);
-        setUploadChangelog("");
+        resetUploadModal();
 
         if (onUpdate) {
           onUpdate();
@@ -198,7 +276,15 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
         let errorMessage = "Erro ao enviar versão";
 
         if (response.status === 401) {
-          errorMessage = "Sessão expirada. Faça login novamente";
+          errorMessage = "Sessão expirada. Redirecionando para login...";
+          showToast(errorMessage, "error");
+          // Redirecionar para login após breve delay
+          setTimeout(() => {
+            localStorage.removeItem("token");
+            localStorage.removeItem("usuario");
+            window.location.href = "/login";
+          }, 1500);
+          return;
         } else if (response.status === 403) {
           errorMessage = "Você não tem permissão para enviar versões deste trabalho";
         } else if (response.status === 400) {
@@ -288,7 +374,7 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                 <p className="text-sm text-gray-500 dark:text-gray-400">Data de Criação</p>
                 <p className="font-medium text-gray-900 dark:text-gray-100">
                   {trabalho.dataCriacao
-                    ? trabalho.dataCriacao.toDateString()
+                    ? format(new Date(trabalho.dataCriacao), "dd/MM/yyyy", { locale: ptBR })
                     : "Data não disponível"}
                 </p>
               </div>
@@ -343,13 +429,23 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                               : "bg-gray-100 dark:bg-gray-800"
                           }`}
                         >
-                          <FileUp
-                            className={`w-5 h-5 ${
-                              isLatest
-                                ? "text-blue-600 dark:text-blue-300"
-                                : "text-gray-600 dark:text-gray-400"
-                            }`}
-                          />
+                          {versao.urlExterna ? (
+                            <LinkIcon
+                              className={`w-5 h-5 ${
+                                isLatest
+                                  ? "text-blue-600 dark:text-blue-300"
+                                  : "text-gray-600 dark:text-gray-400"
+                              }`}
+                            />
+                          ) : (
+                            <FileUp
+                              className={`w-5 h-5 ${
+                                isLatest
+                                  ? "text-blue-600 dark:text-blue-300"
+                                  : "text-gray-600 dark:text-gray-400"
+                              }`}
+                            />
+                          )}
                         </div>
 
                         <div className="flex-1">
@@ -360,12 +456,18 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                             {isLatest && <Badge variant="info">Atual</Badge>}
                           </div>
                           <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {versao.nomeArquivo} • {formatFileSize(versao.tamanho)}
+                            {versao.nomeArquivo || versao.tituloDocumento || "Documento"} •{" "}
+                            {versao.tamanho
+                              ? formatFileSize(versao.tamanho)
+                              : versao.plataforma
+                              ? PLATAFORMAS_OPTIONS.find((p) => p.value === versao.plataforma)
+                                  ?.label || versao.plataforma
+                              : "URL Externa"}
                           </p>
                           <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
                             <span className="flex items-center gap-1">
                               <Clock className="w-3 h-3" />
-                              {format(versao.dataUpload, "dd/MM/yyyy 'às' HH:mm", {
+                              {format(new Date(versao.dataUpload), "dd/MM/yyyy 'às' HH:mm", {
                                 locale: ptBR,
                               })}
                             </span>
@@ -380,12 +482,19 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                           variant="secondary"
                           onClick={(e) => {
                             e.stopPropagation();
-                            handleDownload(versao.id, versao.nomeArquivo);
+                            handleDownload(
+                              versao.id,
+                              versao.nomeArquivo || versao.tituloDocumento || "documento",
+                              versao.urlExterna
+                            );
                           }}
                           disabled={downloadingId === versao.id}
+                          title={versao.urlExterna ? "Abrir link externo" : "Baixar arquivo"}
                         >
                           {downloadingId === versao.id ? (
                             <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                          ) : versao.urlExterna ? (
+                            <ExternalLink className="w-4 h-4" />
                           ) : (
                             <Download className="w-4 h-4" />
                           )}
@@ -430,9 +539,13 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                                     {comentario.autor.nome}
                                   </span>
                                   <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {format(comentario.dataComentario, "dd/MM/yyyy HH:mm", {
-                                      locale: ptBR,
-                                    })}
+                                    {format(
+                                      new Date(comentario.dataComentario),
+                                      "dd/MM/yyyy HH:mm",
+                                      {
+                                        locale: ptBR,
+                                      }
+                                    )}
                                   </span>
                                 </div>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
@@ -489,7 +602,7 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
               <div>
                 <p className="text-sm text-gray-500 dark:text-gray-400">Data e Horário</p>
                 <p className="font-medium text-gray-900 dark:text-gray-100">
-                  {format(trabalho.banca.data, "dd/MM/yyyy", { locale: ptBR })} às{" "}
+                  {format(new Date(trabalho.banca.data), "dd/MM/yyyy", { locale: ptBR })} às{" "}
                   {trabalho.banca.horario}
                 </p>
               </div>
@@ -548,46 +661,135 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
             </div>
 
             <div className="space-y-4">
+              {/* Seletor de tipo: Arquivo ou URL */}
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Arquivo *
+                  Tipo de Envio
                 </label>
-                <input
-                  type="file"
-                  accept={FILE_CONFIG.ACCEPT_STRING}
-                  onChange={(e) => {
-                    const file = e.target.files?.[0];
-                    if (file) {
-                      if (file.size > FILE_CONFIG.MAX_SIZE) {
-                        showToast(FILE_CONFIG.ERRORS.TOO_LARGE, "error");
-                        e.target.value = "";
-                        return;
-                      }
-
-                      const ext = file.name.split(".").pop()?.toLowerCase();
-                      const allowedExt = FILE_CONFIG.ALLOWED_EXTENSIONS.map((e) =>
-                        e.replace(".", "")
-                      );
-                      if (!ext || !allowedExt.includes(ext)) {
-                        showToast(FILE_CONFIG.ERRORS.INVALID_TYPE, "error");
-                        e.target.value = "";
-                        return;
-                      }
-
-                      setUploadFile(file);
-                    }
-                  }}
-                  className="block w-full text-sm text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 focus:outline-none"
-                />
-                {uploadFile && (
-                  <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                    {uploadFile.name} ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)
-                  </p>
-                )}
-                <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                  Formatos aceitos: PDF, DOC, DOCX (máx. {FILE_CONFIG.MAX_SIZE_MB}MB)
-                </p>
+                <div className="flex gap-4">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="tipoUpload"
+                      value="ARQUIVO"
+                      checked={tipoUpload === "ARQUIVO"}
+                      onChange={() => setTipoUpload("ARQUIVO")}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <FileUp className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">Arquivo</span>
+                  </label>
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="radio"
+                      name="tipoUpload"
+                      value="URL_EXTERNA"
+                      checked={tipoUpload === "URL_EXTERNA"}
+                      onChange={() => setTipoUpload("URL_EXTERNA")}
+                      className="w-4 h-4 text-blue-600"
+                    />
+                    <LinkIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
+                    <span className="text-sm text-gray-700 dark:text-gray-300">
+                      Link Externo
+                    </span>
+                  </label>
+                </div>
               </div>
+
+              {/* Campos para ARQUIVO */}
+              {tipoUpload === "ARQUIVO" && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Arquivo *
+                  </label>
+                  <input
+                    type="file"
+                    accept={FILE_CONFIG.ACCEPT_STRING}
+                    onChange={(e) => {
+                      const file = e.target.files?.[0];
+                      if (file) {
+                        if (file.size > FILE_CONFIG.MAX_SIZE) {
+                          showToast(FILE_CONFIG.ERRORS.TOO_LARGE, "error");
+                          e.target.value = "";
+                          return;
+                        }
+
+                        const ext = file.name.split(".").pop()?.toLowerCase();
+                        const allowedExt = FILE_CONFIG.ALLOWED_EXTENSIONS.map((e) =>
+                          e.replace(".", "")
+                        );
+                        if (!ext || !allowedExt.includes(ext)) {
+                          showToast(FILE_CONFIG.ERRORS.INVALID_TYPE, "error");
+                          e.target.value = "";
+                          return;
+                        }
+
+                        setUploadFile(file);
+                      }
+                    }}
+                    className="block w-full text-sm text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 focus:outline-none"
+                  />
+                  {uploadFile && (
+                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
+                      {uploadFile.name} ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)
+                    </p>
+                  )}
+                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                    Formatos aceitos: PDF, DOC, DOCX (máx. {FILE_CONFIG.MAX_SIZE_MB}MB)
+                  </p>
+                </div>
+              )}
+
+              {/* Campos para URL_EXTERNA */}
+              {tipoUpload === "URL_EXTERNA" && (
+                <>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      URL do Documento *
+                    </label>
+                    <input
+                      type="url"
+                      value={urlExterna}
+                      onChange={(e) => setUrlExterna(e.target.value)}
+                      placeholder="https://docs.google.com/document/d/..."
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                    />
+                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
+                      Cole o link de compartilhamento do documento
+                    </p>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Plataforma
+                    </label>
+                    <select
+                      value={plataforma}
+                      onChange={(e) => setPlataforma(e.target.value as PlataformaExterna)}
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                    >
+                      {PLATAFORMAS_OPTIONS.map((opt) => (
+                        <option key={opt.value} value={opt.value}>
+                          {opt.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                      Título do Documento *
+                    </label>
+                    <input
+                      type="text"
+                      value={tituloDocumento}
+                      onChange={(e) => setTituloDocumento(e.target.value)}
+                      placeholder="Ex: TCC - Versão Final"
+                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                    />
+                  </div>
+                </>
+              )}
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -615,10 +817,19 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                 variant="gradient"
                 onClick={handleUploadNewVersion}
                 isLoading={isUploading}
-                disabled={!uploadFile || !uploadChangelog.trim()}
+                disabled={
+                  (tipoUpload === "ARQUIVO" && !uploadFile) ||
+                  (tipoUpload === "URL_EXTERNA" &&
+                    (!urlExterna.trim() || !tituloDocumento.trim())) ||
+                  !uploadChangelog.trim()
+                }
               >
-                <FileUp className="w-4 h-4 mr-2" />
-                Enviar Versão
+                {tipoUpload === "ARQUIVO" ? (
+                  <FileUp className="w-4 h-4 mr-2" />
+                ) : (
+                  <LinkIcon className="w-4 h-4 mr-2" />
+                )}
+                {tipoUpload === "ARQUIVO" ? "Enviar Arquivo" : "Salvar Link"}
               </Button>
             </div>
           </div>

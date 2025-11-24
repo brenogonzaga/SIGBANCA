@@ -2,19 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import prisma from "@/app/lib/prisma";
 import { withAuth } from "@/app/lib/authMiddleware";
 import { Prisma, TrabalhoStatus } from "@prisma/client";
+import { createTrabalhoSchema } from "@/app/lib/validationSchemas";
 import { z } from "zod";
-
-const createTrabalhoSchema = z.object({
-  titulo: z.string().min(1, "Título é obrigatório"),
-  descricao: z.string().min(1, "Descrição é obrigatória"),
-  curso: z.string().min(1, "Curso é obrigatório"),
-  alunoId: z.string(),
-  orientadorId: z.string(),
-  dataInicio: z.string(),
-  previsaoTermino: z.string().optional(),
-  palavrasChave: z.string().optional(),
-  resumo: z.string().optional(),
-});
 
 export const GET = withAuth(async (request: NextRequest, user) => {
   try {
@@ -26,7 +15,13 @@ export const GET = withAuth(async (request: NextRequest, user) => {
     const where: Prisma.TrabalhoWhereInput = {};
 
     if (status) {
-      where.status = status as TrabalhoStatus;
+      // Suporta múltiplos status separados por vírgula
+      const statusArray = status.split(",").map((s) => s.trim()) as TrabalhoStatus[];
+      if (statusArray.length === 1) {
+        where.status = statusArray[0];
+      } else {
+        where.status = { in: statusArray };
+      }
     }
 
     if (alunoId) {
@@ -133,7 +128,7 @@ export const POST = withAuth(async (request: NextRequest, user) => {
         curso: validatedData.curso,
         alunoId,
         orientadorId: validatedData.orientadorId,
-        dataInicio: new Date(validatedData.dataInicio),
+        dataInicio: validatedData.dataInicio ? new Date(validatedData.dataInicio) : new Date(),
         status: "EM_ELABORACAO",
       },
       include: {

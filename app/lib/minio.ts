@@ -16,7 +16,6 @@ export async function ensureBucketExists() {
     const exists = await minioClient.bucketExists(BUCKET_NAME);
     if (!exists) {
       await minioClient.makeBucket(BUCKET_NAME, "us-east-1");
-      console.log(`Bucket ${BUCKET_NAME} criado com sucesso`);
 
       const policy = {
         Version: "2012-10-17",
