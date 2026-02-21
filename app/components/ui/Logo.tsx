@@ -32,10 +32,10 @@ export function Logo({ size = "md", showText = true, className = "" }: LogoProps
     <div className={`flex items-center gap-3 ${className}`}>
       {/* Logo Icon */}
       <div
-        className={`${currentSize.container} rounded-xl bg-gradient-to-br from-blue-600 via-purple-600 to-indigo-700 flex items-center justify-center relative overflow-hidden shadow-lg hover-lift`}
+        className={`${currentSize.container} rounded-xl bg-gradient-to-br from-[#4F46E5] via-[#7C3AED] to-[#059669] flex items-center justify-center relative overflow-hidden shadow-[var(--shadow-colored)] hover-lift`}
       >
         {/* Background pattern */}
-        <div className="absolute inset-0 bg-white/10 backdrop-blur-sm"></div>
+        <div className="absolute inset-0 bg-white/5 backdrop-blur-[2px]"></div>
 
         {/* Icons */}
         <div className="relative flex items-center justify-center">
@@ -51,10 +51,12 @@ export function Logo({ size = "md", showText = true, className = "" }: LogoProps
       {/* Logo Text */}
       {showText && (
         <div className="flex flex-col leading-none">
-          <span className={`${currentSize.text} font-bold gradient-text`}>SIGBANCA</span>
+          <span className={`${currentSize.text} font-extrabold tracking-tight gradient-text font-[Plus\\ Jakarta\\ Sans]`}>
+            SIGBANCA
+          </span>
           {size !== "sm" && (
-            <span className="text-xs text-gray-600 dark:text-gray-400 font-medium tracking-wide">
-              Sistema de Gestão de Bancas
+            <span className="text-[10px] text-[var(--muted)] font-semibold uppercase tracking-[0.1em] mt-0.5">
+              Gestão de Bancas
             </span>
           )}
         </div>

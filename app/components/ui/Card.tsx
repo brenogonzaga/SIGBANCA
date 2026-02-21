@@ -10,13 +10,13 @@ interface CardProps {
 export function Card({ children, className = "", hover = false, gradient = false }: CardProps) {
   return (
     <div
-      className={`bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 shadow-md ${
+      className={`bg-[var(--surface)] dark:bg-[var(--surface-elevated)] rounded-[var(--radius-lg)] border border-[var(--border)] shadow-[var(--shadow)] ${
         hover
-          ? "transition-all duration-300 hover:shadow-xl hover:-translate-y-1"
+          ? "transition-all duration-300 hover:shadow-[var(--shadow-md)] hover:-translate-y-1 hover:border-[var(--border-strong)]"
           : "transition-shadow duration-200"
       } ${
         gradient
-          ? "bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900"
+          ? "bg-gradient-to-br from-[var(--surface)] to-[var(--background)]"
           : ""
       } ${className}`}
     >
@@ -28,7 +28,7 @@ export function Card({ children, className = "", hover = false, gradient = false
 export function CardHeader({ children, className = "" }: CardProps) {
   return (
     <div
-      className={`p-6 border-b border-gray-200 dark:border-gray-700 bg-gray-50/50 dark:bg-gray-900/50 rounded-t-xl ${className}`}
+      className={`p-6 border-b border-[var(--border-light)] dark:border-[var(--border)] bg-[var(--background)]/30 dark:bg-black/10 rounded-t-[var(--radius-lg)] ${className}`}
     >
       {children}
     </div>
@@ -36,7 +36,7 @@ export function CardHeader({ children, className = "" }: CardProps) {
 }
 
 export function CardContent({ children, className = "" }: CardProps) {
-  return <div className={`p-6 ${className}`}>{children}</div>;
+  return <div className={`p-5 md:p-8 ${className}`}>{children}</div>;
 }
 
 export function CardTitle({ children, className = "" }: CardProps) {
@@ -58,7 +58,7 @@ export function CardDescription({ children, className = "" }: CardProps) {
 export function CardFooter({ children, className = "" }: CardProps) {
   return (
     <div
-      className={`px-6 py-4 bg-gray-50 dark:bg-gray-900/50 border-t border-gray-200 dark:border-gray-700 rounded-b-xl ${className}`}
+      className={`px-6 py-4 bg-[var(--background)]/20 dark:bg-black/5 border-t border-[var(--border-light)] dark:border-[var(--border)] rounded-b-[var(--radius-lg)] ${className}`}
     >
       {children}
     </div>

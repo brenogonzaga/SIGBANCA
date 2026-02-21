@@ -24,6 +24,12 @@ import {
   Edit,
   Trash2,
   Check,
+  ArrowLeft,
+  Users,
+  Mail,
+  CheckCircle,
+  Star,
+  Award,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -434,89 +440,112 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-8 animate-fade-in relative">
       {/* Botão Voltar */}
       {onBack && (
-        <Button variant="secondary" onClick={onBack}>
-          ← Voltar
+        <Button variant="ghost" onClick={onBack} className="text-[var(--muted)] hover:text-[var(--primary)] transition-all -ml-2 group">
+          <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
+          Voltar para listagem
         </Button>
       )}
 
-      {/* Informações Gerais */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div className="flex-1">
-              <CardTitle className="text-2xl mb-2">{trabalho.titulo}</CardTitle>
-              <p className="text-gray-600 dark:text-gray-400">{trabalho.descricao}</p>
+      {/* Hero Section / Informações Gerais */}
+      <Card className="surface-card overflow-hidden border-t-4 border-t-[var(--primary)] relative group">
+        <div className="absolute inset-0 bg-dot-pattern opacity-[0.05] pointer-events-none group-hover:opacity-[0.1] transition-opacity"></div>
+        <CardHeader className="p-8 pb-4 relative z-10">
+          <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+            <div className="flex-1 space-y-4">
+              <div className="flex flex-wrap items-center gap-3">
+                <Badge variant="info" className="bg-[var(--primary-light)]/10 text-[var(--primary)] ring-1 ring-[var(--primary-light)] px-3 py-1 text-[10px] font-black uppercase tracking-widest">
+                  {trabalho.curso}
+                </Badge>
+                <Badge variant="default" className="px-3 py-1 text-[10px] font-black uppercase tracking-widest bg-[var(--surface-light)] border border-[var(--border)]">
+                  {trabalho.status}
+                </Badge>
+              </div>
+              <h2 className="text-3xl md:text-4xl font-black text-[var(--foreground)] tracking-tight font-[Plus\ Jakarta\ Sans] leading-tight group-hover:text-[var(--primary)] transition-colors">
+                {trabalho.titulo}
+              </h2>
+              <p className="text-[var(--muted)] text-lg leading-relaxed max-w-3xl">
+                {trabalho.descricao}
+              </p>
+            </div>
+            <div className="flex flex-col gap-2 min-w-[200px] animate-fade-in">
+              <div className="p-6 rounded-[24px] bg-[var(--surface-light)]/50 backdrop-blur-sm border border-[var(--border)] text-center shadow-inner group-hover:shadow-md transition-all">
+                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-[0.2em] mb-2">Versão Atual</p>
+                <p className="text-4xl font-black text-[var(--primary)] tracking-tighter">{trabalho.versaoAtual}</p>
+              </div>
             </div>
           </div>
         </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="flex items-center gap-2">
-              <User className="w-5 h-5 text-gray-500" />
+        <CardContent className="p-8 pt-6 relative z-10">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8 pt-8 border-t border-[var(--border-light)]">
+            <div className="flex items-center gap-4 group/item">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--primary-light)]/50 flex items-center justify-center shadow-inner group-hover/item:scale-110 transition-transform duration-500">
+                <User className="w-6 h-6 text-[var(--primary)]" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Aluno</p>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                  {trabalho.aluno.nome}
-                </p>
+                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">Aluno</p>
+                <p className="font-bold text-[var(--foreground)] text-sm">{trabalho.aluno.nome}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <User className="w-5 h-5 text-gray-500" />
+            <div className="flex items-center gap-4 group/item">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--accent-light)]/50 flex items-center justify-center shadow-inner group-hover/item:scale-110 transition-transform duration-500">
+                <User className="w-6 h-6 text-[var(--accent)]" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Orientador</p>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                  {trabalho.orientador.nome}
-                </p>
+                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">Orientador</p>
+                <p className="font-bold text-[var(--foreground)] text-sm">{trabalho.orientador.nome}</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <FileText className="w-5 h-5 text-gray-500" />
+            <div className="flex items-center gap-4 group/item">
+              <div className="w-12 h-12 rounded-2xl bg-indigo-500/10 flex items-center justify-center shadow-inner group-hover/item:scale-110 transition-transform duration-500">
+                <FileText className="w-6 h-6 text-indigo-500" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Curso</p>
-                <p className="font-medium text-gray-900 dark:text-gray-100">{trabalho.curso}</p>
+                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">Histórico</p>
+                <p className="font-bold text-[var(--foreground)] text-sm">{trabalho.versoes.length} submissões</p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
-              <Calendar className="w-5 h-5 text-gray-500" />
+            <div className="flex items-center gap-4 group/item">
+              <div className="w-12 h-12 rounded-2xl bg-orange-500/10 flex items-center justify-center shadow-inner group-hover/item:scale-110 transition-transform duration-500">
+                <Calendar className="w-6 h-6 text-orange-500" />
+              </div>
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Data de Criação</p>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
+                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">Submetido em</p>
+                <p className="font-bold text-[var(--foreground)] text-sm">
                   {trabalho.dataCriacao
-                    ? format(new Date(trabalho.dataCriacao), "dd/MM/yyyy", { locale: ptBR })
-                    : "Data não disponível"}
+                    ? format(new Date(trabalho.dataCriacao), "dd MMM, yyyy", { locale: ptBR })
+                    : "Em breve"}
                 </p>
               </div>
             </div>
-          </div>
-
-          <div className="flex gap-2 pt-4">
-            <Badge variant="info">Versão Atual: {trabalho.versaoAtual}</Badge>
-            <Badge variant="default">{trabalho.versoes.length} versões</Badge>
           </div>
         </CardContent>
       </Card>
 
       {/* Histórico de Versões */}
-      <Card>
-        <CardHeader>
-          <div className="flex items-center justify-between">
-            <CardTitle>Histórico de Versões</CardTitle>
+      <Card className="surface-card relative overflow-hidden">
+        <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--primary)]/5 rounded-full blur-[100px] pointer-events-none -mr-32 -mt-32"></div>
+        <CardHeader className="p-8 pb-4 relative z-10">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
+            <div className="flex items-center gap-4">
+              <div className="w-2 h-8 bg-[var(--primary)] rounded-full"></div>
+              <h3 className="text-2xl font-black text-[var(--foreground)] font-[Plus\ Jakarta\ Sans]">Timeline de Versões</h3>
+            </div>
             {canUpload && (
-              <Button variant="gradient" size="sm" onClick={() => setShowUploadModal(true)}>
-                <FileUp className="w-4 h-4 mr-2" />
-                Enviar Nova Versão
+              <Button variant="gradient" size="lg" onClick={() => setShowUploadModal(true)} className="px-8 rounded-2xl shadow-xl shadow-indigo-500/20 animate-scale-in">
+                <FileUp className="w-5 h-5 mr-3" />
+                Submeter Versão
               </Button>
             )}
           </div>
         </CardHeader>
-        <CardContent>
-          <div className="space-y-4">
+        <CardContent className="p-8 pt-4 relative z-10">
+          <div className="space-y-6">
             {trabalho.versoes.map((versao) => {
               const isExpanded = versaoExpandida === versao.id;
               const isLatest = versao.numeroVersao === trabalho.versaoAtual;
@@ -524,76 +553,70 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
               return (
                 <div
                   key={versao.id}
-                  className={`border rounded-lg ${
-                    isLatest
-                      ? "border-blue-300 dark:border-blue-700 bg-blue-50 dark:bg-blue-900/20"
-                      : "border-gray-200 dark:border-gray-700"
+                  className={`group relative overflow-hidden transition-all duration-500 rounded-[32px] border ${
+                    isExpanded 
+                      ? "ring-2 ring-[var(--primary-light)] border-transparent shadow-2xl bg-[var(--surface-light)]" 
+                      : isLatest
+                        ? "border-[var(--primary-light)] bg-[var(--primary-light)]/5 hover:bg-[var(--primary-light)]/10"
+                        : "border-[var(--border)] bg-[var(--surface-light)]/50 hover:bg-[var(--surface-light)]"
                   }`}
                 >
                   <div
-                    className="p-4 cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                    className="p-6 cursor-pointer"
                     onClick={() => toggleVersao(versao.id)}
                   >
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-4 flex-1">
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex items-center gap-5 flex-1">
                         <div
-                          className={`p-2 rounded-lg ${
+                          className={`w-14 h-14 rounded-2xl flex items-center justify-center shadow-inner transition-transform duration-500 group-hover:scale-110 ${
                             isLatest
-                              ? "bg-blue-100 dark:bg-blue-900"
-                              : "bg-gray-100 dark:bg-gray-800"
+                              ? "bg-[var(--primary)] text-white shadow-lg shadow-indigo-500/20"
+                              : "bg-[var(--background)] border border-[var(--border-light)] text-[var(--muted)]"
                           }`}
                         >
                           {versao.urlExterna ? (
-                            <LinkIcon
-                              className={`w-5 h-5 ${
-                                isLatest
-                                  ? "text-blue-600 dark:text-blue-300"
-                                  : "text-gray-600 dark:text-gray-400"
-                              }`}
-                            />
+                            <LinkIcon className="w-6 h-6" />
                           ) : (
-                            <FileUp
-                              className={`w-5 h-5 ${
-                                isLatest
-                                  ? "text-blue-600 dark:text-blue-300"
-                                  : "text-gray-600 dark:text-gray-400"
-                              }`}
-                            />
+                            <FileUp className="w-6 h-6" />
                           )}
                         </div>
 
                         <div className="flex-1">
-                          <div className="flex items-center gap-2">
-                            <h4 className="font-semibold text-gray-900 dark:text-gray-100">
-                              Versão {versao.numeroVersao}
-                            </h4>
-                            {isLatest && <Badge variant="info">Atual</Badge>}
+                          <div className="flex items-center gap-3 mb-1">
+                            <span className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-[0.2em]">Versão {versao.numeroVersao}</span>
+                            {isLatest && <Badge variant="info" className="text-[9px] font-black py-0.5 px-2">RECENTE</Badge>}
                           </div>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {versao.nomeArquivo || versao.tituloDocumento || "Documento"} •{" "}
-                            {versao.tamanho
-                              ? formatFileSize(versao.tamanho)
-                              : versao.plataforma
-                              ? PLATAFORMAS_OPTIONS.find((p) => p.value === versao.plataforma)
-                                  ?.label || versao.plataforma
-                              : "URL Externa"}
-                          </p>
-                          <div className="flex items-center gap-4 mt-1 text-xs text-gray-500 dark:text-gray-400">
-                            <span className="flex items-center gap-1">
-                              <Clock className="w-3 h-3" />
-                              {format(new Date(versao.dataUpload), "dd/MM/yyyy 'às' HH:mm", {
-                                locale: ptBR,
-                              })}
+                          <h4 className="text-lg font-bold text-[var(--foreground)] tracking-tight">
+                            {versao.nomeArquivo || versao.tituloDocumento || "Documento sem título"}
+                          </h4>
+                          
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-xs font-medium text-[var(--muted)]">
+                            <span className="flex items-center gap-2 bg-[var(--background)]/50 px-3 py-1 rounded-full border border-[var(--border-light)]">
+                              <Calendar className="w-3.5 h-3.5 text-[var(--primary)]" />
+                              {format(new Date(versao.dataUpload), "dd MMM, yyyy", { locale: ptBR })}
                             </span>
-                            {versao.uploadPor && <span>Por {versao.uploadPor.nome}</span>}
+                            <span className="flex items-center gap-2 bg-[var(--background)]/50 px-3 py-1 rounded-full border border-[var(--border-light)]">
+                              <User className="w-3.5 h-3.5 text-[var(--accent)]" />
+                              {versao.uploadPor?.nome || "Sistema"}
+                            </span>
+                            {versao.tamanho ? (
+                               <span className="bg-[var(--primary-light)]/10 text-[var(--primary)] px-2 py-0.5 rounded-lg font-black text-[10px]">
+                                {formatFileSize(versao.tamanho)}
+                               </span>
+                            ) : versao.plataforma && (
+                              <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-lg font-black text-[10px] uppercase">
+                                {PLATAFORMAS_OPTIONS.find((p) => p.value === versao.plataforma)?.label || versao.plataforma}
+                              </span>
+                            )}
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-3">
                         <Button
-                          size="sm"
-                          variant="secondary"
+                          size="md"
+                          variant="outline"
+                          className="rounded-xl border-[var(--border)] hover:bg-[var(--primary)] hover:text-white transition-all shadow-sm"
                           onClick={(e) => {
                             e.stopPropagation();
                             handleDownload(
@@ -603,162 +626,154 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                             );
                           }}
                           disabled={downloadingId === versao.id}
-                          title={versao.urlExterna ? "Abrir link externo" : "Baixar arquivo"}
                         >
                           {downloadingId === versao.id ? (
-                            <div className="w-4 h-4 border-2 border-gray-300 border-t-blue-500 rounded-full animate-spin" />
+                            <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin" />
                           ) : versao.urlExterna ? (
                             <ExternalLink className="w-4 h-4" />
                           ) : (
                             <Download className="w-4 h-4" />
                           )}
                         </Button>
-                        {isExpanded ? (
-                          <ChevronUp className="w-5 h-5 text-gray-500" />
-                        ) : (
-                          <ChevronDown className="w-5 h-5 text-gray-500" />
-                        )}
+                        <div className={`p-2 rounded-xl transition-all duration-300 ${isExpanded ? "bg-[var(--primary-light)] text-[var(--primary)] rotate-180" : "bg-[var(--background)] text-[var(--muted)]"}`}>
+                          <ChevronDown className="w-5 h-5" />
+                        </div>
                       </div>
                     </div>
                   </div>
 
                   {isExpanded && (
-                    <div className="border-t border-gray-200 dark:border-gray-700 p-4 space-y-4">
+                    <div className="border-t border-[var(--border-light)] p-8 bg-[var(--background)]/30 backdrop-blur-xl animate-fade-in space-y-8">
                       {versao.changelog && (
-                        <div>
-                          <h5 className="font-medium text-sm text-gray-700 dark:text-gray-300 mb-1">
-                            Alterações
+                        <div className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)] relative overflow-hidden group/change">
+                          <div className="absolute top-0 left-0 w-1 h-full bg-[var(--primary)] opacity-50"></div>
+                          <h5 className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-3 flex items-center gap-2">
+                             <FileText className="w-3 h-3" /> Notas de Revisão
                           </h5>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {versao.changelog}
+                          <p className="text-sm text-[var(--foreground)] leading-relaxed font-semibold italic">
+                            "{versao.changelog}"
                           </p>
                         </div>
                       )}
 
-                      {/* Comentários */}
-                      {versao.comentarios?.length > 0 && (
-                        <div>
-                          <h5 className="font-medium text-sm text-gray-700 dark:text-gray-300 mb-2 flex items-center gap-2">
-                            <MessageSquare className="w-4 h-4" />
-                            Comentários ({versao.comentarios.length})
+                      {/* Comentários Section */}
+                      <div className="space-y-6">
+                        <div className="flex items-center justify-between">
+                          <h5 className="text-xl font-black text-[var(--foreground)] tracking-tight flex items-center gap-3">
+                            <MessageSquare className="w-6 h-6 text-[var(--primary)]" />
+                            Anotações Acadêmicas  
+                            {versao.comentarios?.length > 0 && (
+                              <Badge variant="default" className="ml-2 bg-[var(--surface)] border border-[var(--border)] text-[var(--muted)]">{versao.comentarios.length}</Badge>
+                            )}
                           </h5>
-                          <div className="space-y-3">
+                        </div>
+
+                        {versao.comentarios?.length > 0 ? (
+                          <div className="space-y-4 max-h-[400px] overflow-y-auto pr-2 custom-scrollbar">
                             {versao.comentarios.map((comentario: Comentario) => (
                               <div
                                 key={comentario.id}
-                                className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700"
+                                className={`flex flex-col p-6 rounded-[24px] border transition-all duration-300 ${
+                                  comentario.autor.id === usuario?.id 
+                                    ? "bg-white dark:bg-[var(--surface)] border-[var(--border)] shadow-sm self-end max-w-[90%] ml-auto" 
+                                    : "bg-[var(--surface-light)]/40 border-[var(--border-light)] max-w-[90%]"
+                                }`}
                               >
-                                <div className="flex items-start justify-between mb-2">
-                                  <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
-                                    {comentario.autor.nome}
-                                  </span>
-                                  <div className="flex items-center gap-2">
-                                    <span className="text-xs text-gray-500 dark:text-gray-400">
-                                      {format(
-                                        new Date(comentario.dataComentario),
-                                        "dd/MM/yyyy HH:mm",
-                                        { locale: ptBR }
-                                      )}
-                                    </span>
-                                    {/* Botões edit/delete: visivel para o autor ou admin/coordenador */}
-                                    {(comentario.autor.id === usuario?.id ||
-                                      usuario?.role === "ADMIN" ||
-                                      usuario?.role === "COORDENADOR") && (
-                                      <div className="flex gap-1">
-                                        {comentario.autor.id === usuario?.id && (
-                                          <button
-                                            onClick={() =>
-                                              setComentarioEditando({
-                                                id: comentario.id,
-                                                texto: comentario.texto,
-                                              })
-                                            }
-                                            className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
-                                            title="Editar comentário"
-                                          >
-                                            <Edit className="w-3.5 h-3.5" />
-                                          </button>
-                                        )}
-                                        <button
-                                          onClick={() => handleDeletarComentario(comentario.id)}
-                                          disabled={deletingComentarioId === comentario.id}
-                                          className="p-1 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
-                                          title="Excluir comentário"
-                                        >
-                                          <Trash2 className="w-3.5 h-3.5" />
-                                        </button>
-                                      </div>
-                                    )}
+                                <div className="flex items-center justify-between mb-4">
+                                  <div className="flex items-center gap-3">
+                                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-[var(--primary)] to-[#7C3AED] flex items-center justify-center text-white text-[10px] font-bold shadow-md">
+                                      {comentario.autor.nome.charAt(0).toUpperCase()}
+                                    </div>
+                                    <div>
+                                      <p className="font-bold text-xs text-[var(--foreground)]">{comentario.autor.nome}</p>
+                                      <p className="text-[10px] text-[var(--muted-light)] font-bold uppercase tracking-tighter">
+                                        {format(new Date(comentario.dataComentario), "dd MMM, HH:mm", { locale: ptBR })}
+                                      </p>
+                                    </div>
                                   </div>
+
+                                  {(comentario.autor.id === usuario?.id || usuario?.role === "ADMIN" || usuario?.role === "COORDENADOR") && (
+                                    <div className="flex gap-2">
+                                      {comentario.autor.id === usuario?.id && (
+                                        <button
+                                          onClick={() => setComentarioEditando({ id: comentario.id, texto: comentario.texto })}
+                                          className="p-1.5 text-[var(--muted)] hover:text-[var(--primary)] hover:bg-[var(--primary-light)]/20 rounded-lg transition-all"
+                                        >
+                                          <Edit className="w-3.5 h-3.5" />
+                                        </button>
+                                      )}
+                                      <button
+                                        onClick={() => handleDeletarComentario(comentario.id)}
+                                        disabled={deletingComentarioId === comentario.id}
+                                        className="p-1.5 text-[var(--muted)] hover:text-red-500 hover:bg-red-500/10 rounded-lg transition-all disabled:opacity-50"
+                                      >
+                                        <Trash2 className="w-3.5 h-3.5" />
+                                      </button>
+                                    </div>
+                                  )}
                                 </div>
-                                {/* Editar inline */}
+
                                 {comentarioEditando?.id === comentario.id ? (
-                                  <div className="space-y-2">
+                                  <div className="space-y-3">
                                     <textarea
                                       value={comentarioEditando.texto}
-                                      onChange={(e) =>
-                                        setComentarioEditando({
-                                          ...comentarioEditando,
-                                          texto: e.target.value,
-                                        })
-                                      }
-                                      className="w-full px-3 py-2 border border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 text-sm"
+                                      onChange={(e) => setComentarioEditando({ ...comentarioEditando, texto: e.target.value })}
+                                      className="w-full p-4 bg-[var(--background)] border border-[var(--primary-light)] rounded-2xl focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10 text-sm font-medium resize-none"
                                       rows={3}
                                     />
-                                    <div className="flex gap-2">
-                                      <Button
-                                        size="sm"
-                                        onClick={handleEditarComentario}
-                                        disabled={isSavingEdit}
-                                      >
-                                        <Check className="w-3.5 h-3.5 mr-1" />
-                                        {isSavingEdit ? "Salvando..." : "Salvar"}
-                                      </Button>
-                                      <Button
-                                        size="sm"
-                                        variant="secondary"
-                                        onClick={() => setComentarioEditando(null)}
-                                        disabled={isSavingEdit}
-                                      >
+                                    <div className="flex gap-2 justify-end">
+                                      <Button size="sm" variant="ghost" onClick={() => setComentarioEditando(null)} disabled={isSavingEdit} className="rounded-xl">
                                         Cancelar
+                                      </Button>
+                                      <Button size="sm" variant="gradient" onClick={handleEditarComentario} disabled={isSavingEdit} className="rounded-xl">
+                                        {isSavingEdit ? "Salvando..." : "Salvar Alteração"}
                                       </Button>
                                     </div>
                                   </div>
                                 ) : (
-                                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                                  <p className="text-sm text-[var(--foreground)] leading-relaxed font-medium">
                                     {comentario.texto}
                                   </p>
                                 )}
                               </div>
                             ))}
                           </div>
-                        </div>
-                      )}
+                        ) : (
+                          <div className="text-center py-8 bg-[var(--surface-light)]/20 rounded-2xl border border-dashed border-[var(--border)]">
+                            <MessageSquare className="w-10 h-10 text-[var(--muted-light)] mx-auto mb-3 opacity-20" />
+                            <p className="text-sm text-[var(--muted)] font-medium">Nenhum comentário acadêmico ainda.</p>
+                          </div>
+                        )}
 
-                      <div className="space-y-2">
-                        <textarea
-                          placeholder="Adicione um comentário..."
-                          className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                          rows={3}
-                          value={novoComentario[versao.id] || ""}
-                          onChange={(e) =>
-                            setNovoComentario({
-                              ...novoComentario,
-                              [versao.id]: e.target.value,
-                            })
-                          }
-                        />
-                        <Button
-                          size="sm"
-                          variant="secondary"
-                          onClick={() => handleAddComment(versao.id)}
-                          disabled={isAddingComment[versao.id]}
-                        >
-                          <MessageSquare className="w-4 h-4 mr-2" />
-                          {isAddingComment[versao.id]
-                            ? "Adicionando..."
-                            : "Adicionar Comentário"}
-                        </Button>
+                        {/* Novo Comentário Input */}
+                        <div className="pt-6 border-t border-[var(--border-light)]">
+                          <div className="relative group/input">
+                            <textarea
+                              placeholder="Escreva sua análise técnica ou dúvida..."
+                              className="w-full p-5 pr-32 bg-[var(--surface)] border border-[var(--border)] rounded-[24px] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10 focus:border-[var(--primary-light)] text-sm font-medium shadow-sm group-hover/input:shadow-md transition-all resize-none min-h-[100px]"
+                              value={novoComentario[versao.id] || ""}
+                              onChange={(e) => setNovoComentario({ ...novoComentario, [versao.id]: e.target.value })}
+                            />
+                            <div className="absolute right-3 bottom-3">
+                              <Button
+                                size="md"
+                                variant="gradient"
+                                onClick={() => handleAddComment(versao.id)}
+                                disabled={isAddingComment[versao.id] || !novoComentario[versao.id]?.trim()}
+                                className="rounded-2xl shadow-lg shadow-indigo-500/10 px-6 py-5"
+                              >
+                                {isAddingComment[versao.id] ? (
+                                  <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                                ) : (
+                                  <>
+                                    <MessageSquare className="w-4 h-4 mr-2" />
+                                    Enviar
+                                  </>
+                                )}
+                              </Button>
+                            </div>
+                          </div>
+                        </div>
                       </div>
                     </div>
                   )}
@@ -769,49 +784,81 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
         </CardContent>
       </Card>
 
-      {/* Informações da Banca */}
+      {/* Detalhes da Defesa */}
       {trabalho.banca && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Informações da Banca</CardTitle>
-          </CardHeader>
-          <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Data e Horário</p>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                  {format(new Date(trabalho.banca.data), "dd/MM/yyyy", { locale: ptBR })} às{" "}
-                  {trabalho.banca.horario}
-                </p>
+        <Card className="surface-card overflow-hidden">
+          <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-amber-400 to-orange-500 opacity-50"></div>
+          <CardHeader className="p-8 pb-4">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-amber-500/10 flex items-center justify-center">
+                <Users className="w-6 h-6 text-amber-500" />
               </div>
               <div>
-                <p className="text-sm text-gray-500 dark:text-gray-400">Local</p>
-                <p className="font-medium text-gray-900 dark:text-gray-100">
-                  {trabalho.banca.local}
-                </p>
+                <h3 className="text-2xl font-black text-[var(--foreground)] font-[Plus\ Jakarta\ Sans]">Detalhes da Defesa</h3>
+                <p className="text-[var(--muted)] text-sm font-medium">Informações logísticas e membros avaliadores</p>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent className="p-8 space-y-8 relative z-10">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-8 bg-[var(--surface-light)]/50 p-6 rounded-[32px] border border-[var(--border)]">
+              <div className="flex items-center gap-5">
+                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[var(--surface)] shadow-sm flex items-center justify-center border border-[var(--border-light)]">
+                  <Calendar className="w-6 h-6 text-orange-500" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">Agendamento</p>
+                  <p className="font-bold text-[var(--foreground)] text-lg">
+                    {format(new Date(trabalho.banca.data), "dd 'de' MMMM, yyyy", { locale: ptBR })}
+                  </p>
+                  <p className="text-sm font-medium text-[var(--muted)] flex items-center gap-2">
+                    <Clock className="w-3.5 h-3.5" /> às {trabalho.banca.horario}
+                  </p>
+                </div>
+              </div>
+              <div className="flex items-center gap-5">
+                <div className="w-12 h-12 rounded-2xl bg-white dark:bg-[var(--surface)] shadow-sm flex items-center justify-center border border-[var(--border-light)]">
+                  <ExternalLink className="w-6 h-6 text-[var(--primary)]" />
+                </div>
+                <div>
+                  <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">Local / Link</p>
+                  <p className="font-bold text-[var(--foreground)] text-lg truncate max-w-[250px]">
+                    {trabalho.banca.local}
+                  </p>
+                  <Badge variant="info" className="text-[9px] font-black uppercase tracking-widest mt-1 bg-[var(--primary-light)]/20 text-[var(--primary)]">
+                    Oficial
+                  </Badge>
+                </div>
               </div>
             </div>
 
             <div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">Membros da Banca</p>
-              <div className="space-y-2">
+              <div className="flex items-center gap-2 mb-6">
+                 <h4 className="text-sm font-black text-[var(--muted)] uppercase tracking-[0.2em]">Composição da Banca</h4>
+                 <div className="flex-1 h-px bg-[var(--border-light)]"></div>
+              </div>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {trabalho.banca.membros.map((membro) => (
                   <div
                     key={membro.id}
-                    className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                    className="flex flex-col p-6 bg-[var(--surface)] dark:bg-[var(--surface-light)] rounded-[28px] border border-[var(--border)] hover:border-[var(--primary-light)] hover:shadow-lg transition-all group/membro"
                   >
-                    <div className="flex items-center gap-3">
-                      <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                        <User className="w-5 h-5 text-blue-600 dark:text-blue-300" />
+                    <div className="flex items-center gap-4 mb-4">
+                      <div className="w-14 h-14 bg-gradient-to-br from-[var(--primary-light)] to-[var(--primary)]/10 rounded-2xl flex items-center justify-center group-hover/membro:scale-110 transition-transform duration-500">
+                        <User className="w-7 h-7 text-[var(--primary)]" />
                       </div>
                       <div>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
+                        <p className="font-black text-[var(--foreground)] text-base group-hover/membro:text-[var(--primary)] transition-colors line-clamp-1">
                           {membro.usuario.nome}
                         </p>
-                        <p className="text-sm text-gray-500 dark:text-gray-400">
-                          {membro.papel.charAt(0).toUpperCase() + membro.papel.slice(1)}
-                        </p>
+                        <Badge variant="info" className="text-[8px] font-black py-0 px-2 uppercase tracking-tighter">
+                          {membro.papel}
+                        </Badge>
                       </div>
+                    </div>
+                    <div className="pt-4 border-t border-[var(--border-light)] mt-auto">
+                      <p className="text-[10px] font-bold text-[var(--muted-light)] uppercase tracking-tight flex items-center gap-2">
+                         <Mail className="w-3 h-3" /> {membro.usuario.email}
+                      </p>
                     </div>
                   </div>
                 ))}
@@ -973,191 +1020,195 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
 
       {/* Modal de Upload de Nova Versão */}
       {showUploadModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-xl max-w-md w-full p-6 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                Enviar Nova Versão
-              </h3>
+        <div className="fixed inset-0 bg-[var(--foreground)]/20 backdrop-blur-md flex items-center justify-center z-50 p-4 animate-in fade-in duration-300">
+          <div className="bg-[var(--surface)] border border-[var(--border)] rounded-[40px] shadow-[0_32px_128px_-16px_rgba(0,0,0,0.3)] max-w-xl w-full p-10 space-y-8 relative overflow-hidden group">
+            <div className="absolute top-0 left-0 w-full h-2 bg-gradient-to-r from-[var(--primary)] to-[#7C3AED]"></div>
+            <div className="absolute top-[-20%] right-[-10%] w-[50%] h-[50%] bg-[var(--primary)]/5 rounded-full blur-[80px] pointer-events-none group-hover:bg-[var(--primary)]/10 transition-colors"></div>
+
+            <div className="flex items-center justify-between relative z-10">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 rounded-2xl bg-[var(--primary-light)]/10 flex items-center justify-center text-[var(--primary)]">
+                   <FileUp className="w-6 h-6" />
+                </div>
+                <div>
+                  <h3 className="text-2xl font-black text-[var(--foreground)] tracking-tight font-[Plus\ Jakarta\ Sans]">
+                    Nova Submissão
+                  </h3>
+                  <p className="text-sm text-[var(--muted)] font-medium">Versão {trabalho.versaoAtual + 1} para {trabalho.titulo}</p>
+                </div>
+              </div>
               <button
                 onClick={handleCloseUploadModal}
-                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
+                className="p-3 text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-light)] rounded-2xl transition-all"
                 disabled={isUploading}
               >
-                <X className="w-5 h-5" />
+                <X className="w-6 h-6" />
               </button>
             </div>
 
-            <div className="space-y-4">
-              {/* Seletor de tipo: Arquivo ou URL */}
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Tipo de Envio
-                </label>
-                <div className="flex gap-4">
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="tipoUpload"
-                      value="ARQUIVO"
-                      checked={tipoUpload === "ARQUIVO"}
-                      onChange={() => setTipoUpload("ARQUIVO")}
-                      className="w-4 h-4 text-blue-600"
-                    />
-                    <FileUp className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">Arquivo</span>
-                  </label>
-                  <label className="flex items-center gap-2 cursor-pointer">
-                    <input
-                      type="radio"
-                      name="tipoUpload"
-                      value="URL_EXTERNA"
-                      checked={tipoUpload === "URL_EXTERNA"}
-                      onChange={() => setTipoUpload("URL_EXTERNA")}
-                      className="w-4 h-4 text-blue-600"
-                    />
-                    <LinkIcon className="w-4 h-4 text-gray-600 dark:text-gray-400" />
-                    <span className="text-sm text-gray-700 dark:text-gray-300">
-                      Link Externo
-                    </span>
-                  </label>
-                </div>
+            <div className="space-y-8 relative z-10">
+              {/* Seletor de tipo: Bento-style */}
+              <div className="grid grid-cols-2 gap-4">
+                <button
+                  type="button"
+                  onClick={() => setTipoUpload("ARQUIVO")}
+                  className={`flex flex-col items-center justify-center p-6 rounded-[32px] border-2 transition-all duration-500 gap-3 ${
+                    tipoUpload === "ARQUIVO" 
+                      ? "border-[var(--primary)] bg-[var(--primary-light)]/5 text-[var(--primary)] shadow-lg shadow-indigo-500/10" 
+                      : "border-[var(--border)] bg-[var(--surface-light)]/50 text-[var(--muted)] hover:border-[var(--primary-light)] hover:bg-[var(--surface-light)]"
+                  }`}
+                >
+                  <FileText className={`w-8 h-8 ${tipoUpload === "ARQUIVO" ? "scale-110" : ""} transition-transform`} />
+                  <span className="text-xs font-black uppercase tracking-widest">Arquivo Local</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTipoUpload("URL_EXTERNA")}
+                  className={`flex flex-col items-center justify-center p-6 rounded-[32px] border-2 transition-all duration-500 gap-3 ${
+                    tipoUpload === "URL_EXTERNA" 
+                      ? "border-[var(--primary)] bg-[var(--primary-light)]/5 text-[var(--primary)] shadow-lg shadow-indigo-500/10" 
+                      : "border-[var(--border)] bg-[var(--surface-light)]/50 text-[var(--muted)] hover:border-[var(--primary-light)] hover:bg-[var(--surface-light)]"
+                  }`}
+                >
+                  <LinkIcon className={`w-8 h-8 ${tipoUpload === "URL_EXTERNA" ? "scale-110" : ""} transition-transform`} />
+                  <span className="text-xs font-black uppercase tracking-widest">Link Externo</span>
+                </button>
               </div>
 
               {/* Campos para ARQUIVO */}
               {tipoUpload === "ARQUIVO" && (
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                    Arquivo *
-                  </label>
-                  <input
-                    type="file"
-                    accept={FILE_CONFIG.ACCEPT_STRING}
-                    onChange={(e) => {
-                      const file = e.target.files?.[0];
-                      if (file) {
-                        if (file.size > FILE_CONFIG.MAX_SIZE) {
-                          showToast(FILE_CONFIG.ERRORS.TOO_LARGE, "error");
-                          e.target.value = "";
-                          return;
+                <div className="space-y-3 animate-in slide-in-from-bottom-2 duration-500">
+                  <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">Upload do Documento</label>
+                  <div className="relative group/file">
+                    <input
+                      type="file"
+                      id="file-upload"
+                      accept={FILE_CONFIG.ACCEPT_STRING}
+                      onChange={(e) => {
+                        const file = e.target.files?.[0];
+                        if (file) {
+                          if (file.size > FILE_CONFIG.MAX_SIZE) {
+                            showToast(FILE_CONFIG.ERRORS.TOO_LARGE, "error");
+                            e.target.value = "";
+                            return;
+                          }
+                          const ext = file.name.split(".").pop()?.toLowerCase();
+                          const allowedExt = FILE_CONFIG.ALLOWED_EXTENSIONS.map((e) => e.replace(".", ""));
+                          if (!ext || !allowedExt.includes(ext)) {
+                            showToast(FILE_CONFIG.ERRORS.INVALID_TYPE, "error");
+                            e.target.value = "";
+                            return;
+                          }
+                          setUploadFile(file);
                         }
-
-                        const ext = file.name.split(".").pop()?.toLowerCase();
-                        const allowedExt = FILE_CONFIG.ALLOWED_EXTENSIONS.map((e) =>
-                          e.replace(".", "")
-                        );
-                        if (!ext || !allowedExt.includes(ext)) {
-                          showToast(FILE_CONFIG.ERRORS.INVALID_TYPE, "error");
-                          e.target.value = "";
-                          return;
-                        }
-
-                        setUploadFile(file);
-                      }
-                    }}
-                    className="block w-full text-sm text-gray-900 dark:text-gray-100 border border-gray-300 dark:border-gray-600 rounded-lg cursor-pointer bg-gray-50 dark:bg-gray-700 focus:outline-none"
-                  />
-                  {uploadFile && (
-                    <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">
-                      {uploadFile.name} ({(uploadFile.size / 1024 / 1024).toFixed(2)} MB)
-                    </p>
-                  )}
-                  <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                    Formatos aceitos: PDF, DOC, DOCX (máx. {FILE_CONFIG.MAX_SIZE_MB}MB)
-                  </p>
+                      }}
+                      className="hidden"
+                    />
+                    <label 
+                      htmlFor="file-upload"
+                      className="flex flex-col items-center justify-center w-full p-8 border border-dashed border-[var(--primary-light)] bg-[var(--primary-light)]/5 rounded-[32px] cursor-pointer hover:bg-[var(--primary-light)]/10 hover:border-[var(--primary)] transition-all group/label"
+                    >
+                      {uploadFile ? (
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 rounded-xl bg-[var(--primary)] flex items-center justify-center text-white shadow-lg">
+                            <Check className="w-6 h-6" />
+                          </div>
+                          <div className="text-left">
+                            <p className="font-bold text-[var(--foreground)] truncate max-w-[200px]">{uploadFile.name}</p>
+                            <p className="text-[10px] text-[var(--muted)]">{(uploadFile.size / 1024 / 1024).toFixed(2)} MB • PDF/Word</p>
+                          </div>
+                        </div>
+                      ) : (
+                        <>
+                          <Download className="w-10 h-10 text-[var(--primary-light)] mb-3 group-hover/label:scale-110 transition-transform" />
+                          <p className="text-sm font-bold text-[var(--foreground)]">Clique para selecionar</p>
+                          <p className="text-xs text-[var(--muted)] mt-1">PDF, DOC, DOCX até {FILE_CONFIG.MAX_SIZE_MB}MB</p>
+                        </>
+                      )}
+                    </label>
+                  </div>
                 </div>
               )}
 
               {/* Campos para URL_EXTERNA */}
               {tipoUpload === "URL_EXTERNA" && (
-                <>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      URL do Documento *
-                    </label>
+                <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
+                  <div className="space-y-3">
+                    <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">Link do Documento</label>
                     <input
                       type="url"
                       value={urlExterna}
                       onChange={(e) => setUrlExterna(e.target.value)}
-                      placeholder="https://docs.google.com/document/d/..."
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                    />
-                    <p className="mt-1 text-xs text-gray-500 dark:text-gray-400">
-                      Cole o link de compartilhamento do documento
-                    </p>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Plataforma
-                    </label>
-                    <select
-                      value={plataforma}
-                      onChange={(e) => setPlataforma(e.target.value as PlataformaExterna)}
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
-                    >
-                      {PLATAFORMAS_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>
-                          {opt.label}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                      Título do Documento *
-                    </label>
-                    <input
-                      type="text"
-                      value={tituloDocumento}
-                      onChange={(e) => setTituloDocumento(e.target.value)}
-                      placeholder="Ex: TCC - Versão Final"
-                      className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                      placeholder="https://docs.google.com/document/..."
+                      className="w-full p-5 bg-[var(--background)] border border-[var(--border)] rounded-[24px] focus:ring-4 focus:ring-[var(--primary)]/10 focus:border-[var(--primary-light)] text-sm font-medium transition-all shadow-inner"
                     />
                   </div>
-                </>
+
+                  <div className="grid grid-cols-2 gap-6">
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">Plataforma</label>
+                      <select
+                        value={plataforma}
+                        onChange={(e) => setPlataforma(e.target.value as PlataformaExterna)}
+                        className="w-full p-5 bg-[var(--background)] border border-[var(--border)] rounded-[24px] focus:ring-4 focus:ring-[var(--primary)]/10 focus:border-[var(--primary-light)] text-sm font-bold transition-all shadow-inner appearance-none"
+                      >
+                        {PLATAFORMAS_OPTIONS.map((opt) => (
+                          <option key={opt.value} value={opt.value}>
+                            {opt.label}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="space-y-3">
+                      <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">Título Amigável</label>
+                      <input
+                        type="text"
+                        value={tituloDocumento}
+                        onChange={(e) => setTituloDocumento(e.target.value)}
+                        placeholder="Ex: TCC v2 - Revisitado"
+                        className="w-full p-5 bg-[var(--background)] border border-[var(--border)] rounded-[24px] focus:ring-4 focus:ring-[var(--primary)]/10 focus:border-[var(--primary-light)] text-sm font-medium transition-all shadow-inner"
+                      />
+                    </div>
+                  </div>
+                </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Descrição das Alterações *
-                </label>
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">Notas da Versão (Changelog)</label>
                 <textarea
                   value={uploadChangelog}
                   onChange={(e) => setUploadChangelog(e.target.value)}
                   rows={3}
-                  placeholder="Descreva as mudanças nesta versão..."
-                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100"
+                  placeholder="Quais foram as principais evoluções nesta submissão?"
+                  className="w-full p-5 bg-[var(--background)] border border-[var(--border)] rounded-[32px] focus:ring-4 focus:ring-[var(--primary)]/10 focus:border-[var(--primary-light)] text-sm font-medium transition-all shadow-inner resize-none"
                 />
               </div>
             </div>
 
-            <div className="flex gap-3 justify-end pt-2">
+            <div className="flex gap-4 items-center justify-end relative z-10 pt-4">
               <Button
-                variant="secondary"
+                variant="ghost"
+                size="lg"
                 onClick={handleCloseUploadModal}
                 disabled={isUploading}
+                className="rounded-2xl px-8"
               >
-                Cancelar
+                Descartar
               </Button>
               <Button
                 variant="gradient"
+                size="lg"
                 onClick={handleUploadNewVersion}
                 isLoading={isUploading}
                 disabled={
+                  isUploading ||
                   (tipoUpload === "ARQUIVO" && !uploadFile) ||
-                  (tipoUpload === "URL_EXTERNA" &&
-                    (!urlExterna.trim() || !tituloDocumento.trim())) ||
+                  (tipoUpload === "URL_EXTERNA" && (!urlExterna.trim() || !tituloDocumento.trim())) ||
                   !uploadChangelog.trim()
                 }
+                className="rounded-2xl px-12 shadow-2xl shadow-indigo-500/20 text-lg font-black"
               >
-                {tipoUpload === "ARQUIVO" ? (
-                  <FileUp className="w-4 h-4 mr-2" />
-                ) : (
-                  <LinkIcon className="w-4 h-4 mr-2" />
-                )}
-                {tipoUpload === "ARQUIVO" ? "Enviar Arquivo" : "Salvar Link"}
+                {tipoUpload === "ARQUIVO" ? "Publicar Arquivo" : "Salvar Link"}
               </Button>
             </div>
           </div>

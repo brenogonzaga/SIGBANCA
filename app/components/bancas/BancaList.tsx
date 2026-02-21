@@ -164,154 +164,165 @@ export function BancaList() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Bancas</h2>
+    <div className="space-y-8 animate-fade-in">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-2 border-b border-[var(--border-light)]">
+        <div>
+          <h2 className="text-3xl font-black text-[var(--foreground)] tracking-tight font-[Plus\ Jakarta\ Sans]">
+            Comissões de <span className="bg-gradient-to-r from-[var(--primary)] to-[#7C3AED] bg-clip-text text-transparent italic">Avaliação</span>
+          </h2>
+          <p className="text-[var(--muted)] font-medium mt-1">Acompanhe e gerencie as bancas examinadoras agendadas.</p>
+        </div>
         {canCreate && (
           <Link href="/bancas/cadastrar">
-            <Button variant="gradient">
-              <Plus className="mr-2 h-4 w-4" />
-              Nova Banca
-            </Button>
+            <button className="group relative flex items-center gap-3 px-8 py-4 bg-[var(--foreground)] text-white rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-black/10">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[var(--primary)] to-[#7C3AED] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <Plus className="w-5 h-5 relative z-10" />
+              <span className="text-sm font-black uppercase tracking-widest relative z-10">Agendar Banca</span>
+            </button>
           </Link>
         )}
       </div>
 
-      <div className="grid gap-4">
+      {/* Grid of Bancas - Bento Layout */}
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {bancas.length === 0 ? (
-          <Card>
-            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-              Nenhuma banca encontrada
+          <div className="lg:col-span-2 py-20 bg-[var(--surface)] rounded-[40px] border border-[var(--border)] flex flex-col items-center justify-center text-center">
+            <div className="w-20 h-20 rounded-3xl bg-[var(--surface-light)] flex items-center justify-center text-[var(--muted-light)] mb-6">
+              <Calendar className="w-10 h-10" />
             </div>
-          </Card>
+            <p className="text-xl font-black text-[var(--foreground)] tracking-tight">Nenhuma banca no horizonte</p>
+            <p className="text-[var(--muted)] font-medium">Os agendamentos futuros aparecerão aqui.</p>
+          </div>
         ) : (
           bancas.map((banca) => (
-            <Card key={banca.id}>
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex-1">
-                    <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">
-                      {banca.trabalho.titulo}
-                    </h3>
+            <div 
+              key={banca.id} 
+              className="group bg-[var(--surface)] hover:bg-[var(--surface-light)] rounded-[40px] border border-[var(--border)] transition-all duration-500 hover:shadow-2xl hover:shadow-[var(--primary)]/5 hover:-translate-y-2 overflow-hidden flex flex-col"
+            >
+              <div className="p-8 flex-1">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="flex flex-col gap-2">
                     <Badge
                       variant={
                         statusConfig[banca.status as keyof typeof statusConfig]?.variant ||
                         "default"
                       }
+                      className="font-black text-[10px] tracking-widest uppercase px-4 py-1.5"
                     >
                       {statusConfig[banca.status as keyof typeof statusConfig]?.label ||
                         banca.status}
                     </Badge>
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     {canEdit(banca) && (
                       <Link href={`/bancas/${banca.id}/editar`}>
-                        <Button variant="outline" size="sm">
-                          <Edit className="h-4 w-4" />
-                        </Button>
+                        <button className="w-10 h-10 bg-white border border-[var(--border)] rounded-xl flex items-center justify-center text-[var(--primary)] hover:bg-[var(--primary-light)]/20 transition-all shadow-sm">
+                          <Edit className="w-4 h-4" />
+                        </button>
                       </Link>
                     )}
                     {canDelete(banca) && (
-                      <Button
-                        variant="danger"
-                        size="sm"
+                      <button
                         onClick={() =>
                           setBancaToDelete({
                             id: banca.id,
                             titulo: banca.trabalho.titulo,
                           })
                         }
-                        isLoading={deletingId === banca.id}
+                        className="w-10 h-10 bg-white border border-[var(--border)] rounded-xl flex items-center justify-center text-[var(--danger)] hover:bg-red-50 transition-all shadow-sm"
                       >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
+                        <Trash2 className="w-4 h-4" />
+                      </button>
                     )}
                   </div>
                 </div>
 
-                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400 mb-4">
-                  <div className="flex items-center gap-2">
-                    <Calendar className="w-4 h-4" />
-                    <span>
-                      {format(new Date(banca.data), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}{" "}
-                      às {banca.horario}
-                    </span>
-                  </div>
+                <h3 className="text-2xl font-black text-[var(--foreground)] tracking-tight mb-6 leading-tight group-hover:text-[var(--primary)] transition-colors">
+                  {banca.trabalho.titulo}
+                </h3>
 
-                  <div className="flex items-center gap-2">
-                    <MapPin className="w-4 h-4" />
-                    <span>{banca.local}</span>
+                <div className="grid grid-cols-2 gap-4 mb-8">
+                  <div className="bg-[var(--surface-light)]/50 p-4 rounded-3xl border border-[var(--border-light)]">
+                    <div className="flex items-center gap-3 text-[var(--muted)] mb-1">
+                       <Calendar className="w-3.5 h-3.5" />
+                       <span className="text-[10px] font-black uppercase tracking-widest">Cronograma</span>
+                    </div>
+                    <p className="text-sm font-bold text-[var(--foreground)]">
+                      {format(new Date(banca.data), "dd/MM/yyyy", { locale: ptBR })} • {banca.horario}
+                    </p>
                   </div>
-
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Trabalho:</strong> {banca.trabalho.titulo}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Aluno:</strong> {banca.trabalho.aluno.nome}
-                  </div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">
-                    <strong>Curso:</strong> {banca.trabalho.aluno.curso}
+                  <div className="bg-[var(--surface-light)]/50 p-4 rounded-3xl border border-[var(--border-light)]">
+                    <div className="flex items-center gap-3 text-[var(--muted)] mb-1">
+                       <MapPin className="w-3.5 h-3.5" />
+                       <span className="text-[10px] font-black uppercase tracking-widest">Recinto</span>
+                    </div>
+                    <p className="text-sm font-bold text-[var(--foreground)] truncate">
+                      {banca.local}
+                    </p>
                   </div>
                 </div>
 
-                {/* Resultado da Banca */}
-                {banca.status === "REALIZADA" && (banca.resultado || banca.notaFinal != null) && (
-                  <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
-                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Resultado</p>
-                    <div className="flex flex-wrap items-center gap-3">
-                      {banca.resultado && (
-                        <Badge
-                          variant={
-                            banca.resultado === "APROVADO"
-                              ? "success"
-                              : banca.resultado === "REPROVADO"
-                              ? "danger"
-                              : "warning"
-                          }
-                        >
-                          {banca.resultado === "APROVADO"
-                            ? "Aprovado"
-                            : banca.resultado === "REPROVADO"
-                            ? "Reprovado"
-                            : "Aprovado com Ressalvas"}
-                        </Badge>
-                      )}
-                      {banca.notaFinal != null && (
-                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                          Nota: <strong>{banca.notaFinal.toFixed(1)}</strong>
-                        </span>
-                      )}
+                <div className="space-y-4 mb-8 pt-6 border-t border-[var(--border-light)] border-dashed">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[var(--primary)]/10 to-[#7C3AED]/10 flex items-center justify-center text-[var(--primary)]">
+                        <Users className="w-5 h-5" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">Acadêmico</p>
+                        <p className="text-sm font-bold text-[var(--foreground)]">{banca.trabalho.aluno.nome}</p>
+                      </div>
                     </div>
                   </div>
-                )}
+                </div>
 
                 <div>
-                  <div className="flex items-center gap-2 mb-2">
-                    <Users className="w-4 h-4 text-gray-600" />
-                    <span className="font-semibold text-gray-900 dark:text-gray-100">
-                      Membros da Banca
-                    </span>
-                  </div>
-                  <div className="space-y-2">
-                    {banca.membros.map((membro) => (
-                      <div
-                        key={membro.id}
-                        className="flex items-center justify-between py-2 px-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                      >
-                        <span className="text-sm text-gray-900 dark:text-gray-100">
-                          {membro.usuario.titulacao ? `${membro.usuario.titulacao} ` : ""}
+                   <div className="flex items-center justify-between mb-4">
+                      <span className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">Comissão Examinadora</span>
+                      <div className="h-[1px] flex-1 mx-4 bg-[var(--border-light)]"></div>
+                   </div>
+                   <div className="flex flex-wrap gap-2">
+                      {banca.membros.map((membro) => (
+                        <div 
+                          key={membro.id}
+                          className="px-4 py-2 bg-[var(--background)] border border-[var(--border)] rounded-full text-xs font-bold text-[var(--muted)] flex items-center gap-2 group/membro hover:border-[var(--primary-light)] hover:text-[var(--foreground)] transition-all"
+                        >
+                          <span className="w-1.5 h-1.5 rounded-full bg-[var(--primary)]/40 group-hover/membro:scale-150 transition-transform"></span>
                           {membro.usuario.nome}
-                        </span>
-                        <Badge variant="default">
-                          {papelConfig[membro.papel as keyof typeof papelConfig] ||
-                            membro.papel}
-                        </Badge>
-                      </div>
-                    ))}
-                  </div>
+                          <span className="text-[10px] opacity-40 font-black">({membro.papel.slice(0, 4)})</span>
+                        </div>
+                      ))}
+                   </div>
                 </div>
+
+                 {/* Outcome Section - Bento Style */}
+                 {banca.status === "REALIZADA" && (banca.resultado || banca.notaFinal != null) && (
+                  <div className="mt-8 p-6 bg-gradient-to-br from-emerald-500/[0.03] to-emerald-500/[0.08] rounded-[32px] border border-emerald-500/20">
+                     <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-4">
+                           <div className="w-12 h-12 rounded-2xl bg-emerald-500 text-white flex items-center justify-center shadow-lg shadow-emerald-500/20">
+                              <Badge variant="success" className="bg-transparent border-none text-white p-0">
+                                 {banca.notaFinal?.toFixed(1) || "P"}
+                              </Badge>
+                           </div>
+                           <div>
+                              <p className="text-[10px] font-black text-emerald-600 uppercase tracking-widest">Veredito Final</p>
+                              <h4 className="text-lg font-black text-[var(--foreground)] tracking-tight">
+                                {banca.resultado?.replace("_", " ") || "Avaliado"}
+                              </h4>
+                           </div>
+                        </div>
+                     </div>
+                  </div>
+                )}
               </div>
-            </Card>
+              
+              <div className="p-4 bg-[var(--surface-light)]/30 border-t border-[var(--border-light)] flex justify-between items-center px-8">
+                  <span className="text-[10px] font-black text-[var(--muted-light)] tracking-widest uppercase">ID: {banca.id.slice(-6)}</span>
+                  <div className={`w-2 h-2 rounded-full ${banca.status === 'REALIZADA' ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-amber-400'}`}></div>
+              </div>
+            </div>
           ))
         )}
       </div>
@@ -320,9 +331,9 @@ export function BancaList() {
         isOpen={!!bancaToDelete}
         onClose={() => setBancaToDelete(null)}
         onConfirm={handleDelete}
-        title="Confirmar Exclusão"
-        message={`Tem certeza que deseja excluir a banca "${bancaToDelete?.titulo}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
+        title="Revogar Agendamento"
+        message={`Tem certeza que deseja desmarcar a banca de "${bancaToDelete?.titulo}"? Esta ação removerá a comissão do calendário acadêmico.`}
+        confirmText="Confirmar Revogação"
         isLoading={!!deletingId}
       />
     </div>

@@ -116,29 +116,37 @@ export function Dashboard() {
       title: "Total de Trabalhos",
       value: stats.totalTrabalhos,
       icon: FileText,
-      color: "text-blue-600",
-      bgColor: "bg-blue-100 dark:bg-blue-900",
+      color: "text-[var(--primary)]",
+      bgColor: "bg-[var(--primary-light)]",
+      borderColor: "border-[var(--primary)]",
+      accentClass: "card-accent"
     },
     {
       title: "Em Revisão",
       value: stats.trabalhosEmRevisao,
       icon: Clock,
-      color: "text-yellow-600",
-      bgColor: "bg-yellow-100 dark:bg-yellow-900",
+      color: "text-[var(--warning)]",
+      bgColor: "bg-[var(--warning-light)]",
+      borderColor: "border-[var(--warning)]",
+      accentClass: "card-accent-warning"
     },
     {
       title: "Aprovados",
       value: stats.trabalhosAprovados,
       icon: CheckCircle,
-      color: "text-green-600",
-      bgColor: "bg-green-100 dark:bg-green-900",
+      color: "text-[var(--accent)]",
+      bgColor: "bg-[var(--accent-light)]",
+      borderColor: "border-[var(--accent)]",
+      accentClass: "card-accent-success"
     },
     {
       title: "Bancas Agendadas",
       value: stats.bancasAgendadas,
       icon: Calendar,
-      color: "text-purple-600",
-      bgColor: "bg-purple-100 dark:bg-purple-900",
+      color: "text-[#7C3AED]",
+      bgColor: "bg-purple-50 dark:bg-purple-900/20",
+      borderColor: "border-purple-500",
+      accentClass: ""
     },
   ];
 
@@ -148,16 +156,18 @@ export function Dashboard() {
       {
         data: stats.distribuicaoPorStatus.map((item) => item.quantidade),
         backgroundColor: [
-          "#3b82f6", // Em Elaboração
-          "#f59e0b", // Submetido
-          "#f97316", // Em Revisão
-          "#8b5cf6", // Aprovado Orientador
-          "#6366f1", // Aguardando Banca
-          "#06b6d4", // Banca Agendada
-          "#10b981", // Aprovado
-          "#ef4444", // Reprovado
-          "#6b7280", // Cancelado
+          "#6366F1", // Indigo
+          "#F59E0B", // Amber
+          "#F97316", // Orange
+          "#8B5CF6", // Violet
+          "#4F46E5", // Deep Indigo
+          "#06B6D4", // Cyan
+          "#10B981", // Emerald
+          "#EF4444", // Red
+          "#94A3B8", // Slate
         ],
+        borderWidth: 0,
+        hoverOffset: 15
       },
     ],
   };
@@ -166,9 +176,10 @@ export function Dashboard() {
     labels: stats.distribuicaoPorCurso.map((item) => item.curso),
     datasets: [
       {
-        label: "Trabalhos por Curso",
+        label: "Trabalhos",
         data: stats.distribuicaoPorCurso.map((item) => item.quantidade),
-        backgroundColor: "#3b82f6",
+        backgroundColor: "#4F46E5",
+        borderRadius: 8,
       },
     ],
   };
@@ -203,110 +214,202 @@ export function Dashboard() {
     : null;
 
   return (
-    <div className="space-y-6">
-      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Dashboard</h2>
+    <div className="space-y-8 animate-fade-in relative">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <h2 className="text-3xl font-extrabold tracking-tight text-[var(--foreground)] font-[Plus\\ Jakarta\\ Sans]">Dashboard</h2>
+          <p className="text-[var(--muted)] text-sm">Bem-vindo ao centro de operações do SIGBANCA.</p>
+        </div>
+        <div className="flex items-center gap-2 text-xs font-bold text-[var(--muted)] uppercase tracking-widest bg-[var(--surface)] px-4 py-2 rounded-full border border-[var(--border)] shadow-sm">
+          <div className="status-dot status-dot-active scale-75"></div>
+          Sistema Online
+        </div>
+      </div>
 
-      {/* Cards de Status */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-        {statusCards.map((card, index) => {
-          const Icon = card.icon;
-          return (
-            <Card key={index}>
-              <div className="p-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <p className="text-sm text-gray-600 dark:text-gray-400">{card.title}</p>
-                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
-                      {card.value}
-                    </p>
+      {/* Bento Grid Principal */}
+      {/* Bento Grid Principal */}
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+        {/* Stats Section */}
+        <div className="md:col-span-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+          {statusCards.map((card, index) => {
+            const Icon = card.icon;
+            return (
+              <Card key={index} className={`hover-lift ${card.accentClass}`} hover>
+                <div className="p-6">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <p className="text-xs font-bold text-[var(--muted)] uppercase tracking-wider">{card.title}</p>
+                      <p className="text-3xl font-black text-[var(--foreground)] mt-2">
+                        {card.value}
+                      </p>
+                    </div>
+                    <div className={`p-4 rounded-2xl ${card.bgColor} shadow-inner`}>
+                      <Icon className={`w-6 h-6 ${card.color}`} />
+                    </div>
                   </div>
-                  <div className={`p-3 rounded-lg ${card.bgColor}`}>
-                    <Icon className={`w-6 h-6 ${card.color}`} />
-                  </div>
+                </div>
+              </Card>
+            );
+          })}
+        </div>
+
+        {/* Chart Column 1 */}
+        <div className="md:col-span-2 space-y-6">
+          <Card className="surface-card">
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-[var(--foreground)]">Distribuição por Curso</h3>
+                <div className="w-8 h-8 rounded-lg bg-[var(--background)] flex items-center justify-center border border-[var(--border)] text-[var(--muted)]">
+                  <FileText className="w-4 h-4" />
                 </div>
               </div>
-            </Card>
-          );
-        })}
-      </div>
-
-      {/* Gráficos */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <Card>
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Distribuição por Curso
-            </h3>
-            <Bar data={barData} options={{ responsive: true, maintainAspectRatio: true }} />
-          </div>
-        </Card>
-
-        <Card>
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Status dos Trabalhos
-            </h3>
-            <Doughnut
-              data={doughnutData}
-              options={{ responsive: true, maintainAspectRatio: true }}
-            />
-          </div>
-        </Card>
-
-        <Card>
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Temas Mais Frequentes
-            </h3>
-            <Line data={lineData} options={{ responsive: true, maintainAspectRatio: true }} />
-          </div>
-        </Card>
-
-        {taxaAprovacaoData && (
-          <Card>
-            <div className="p-6">
-              <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                Taxa de Aprovação por Curso
-              </h3>
-              <Line
-                data={taxaAprovacaoData}
-                options={{ responsive: true, maintainAspectRatio: true }}
-              />
+              <div className="h-[300px] flex items-center justify-center">
+                <Bar data={barData} options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: { 
+                    y: { beginAtZero: true, grid: { display: false }, ticks: { font: { size: 10 } } }, 
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } } 
+                  }
+                }} />
+              </div>
             </div>
           </Card>
-        )}
-      </div>
 
-      {/* Feed de Atividades Recentes */}
-      {stats.atividadesRecentes && stats.atividadesRecentes.length > 0 && (
-        <Card>
-          <div className="p-6">
-            <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-              Atividades Recentes
-            </h3>
-            <div className="space-y-3">
-              {stats.atividadesRecentes.slice(0, 10).map((atividade, index) => (
-                <div
-                  key={index}
-                  className="flex items-start gap-3 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
-                >
-                  <div className="flex-1">
-                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100">
-                      {atividade.usuario?.nome || "Sistema"}
-                    </p>
-                    <p className="text-xs text-gray-600 dark:text-gray-400">
-                      {atividade.acao} - {atividade.entidade}
-                    </p>
-                    <p className="text-xs text-gray-500 dark:text-gray-500 mt-1">
-                      {new Date(atividade.createdAt).toLocaleString("pt-BR")}
-                    </p>
+          <Card className="surface-card">
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-6">
+                <h3 className="text-lg font-bold text-[var(--foreground)]">Temas Frequentes</h3>
+                <div className="w-8 h-8 rounded-lg bg-[var(--background)] flex items-center justify-center border border-[var(--border)] text-[var(--muted)]">
+                  <Clock className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="h-[250px]">
+                <Line data={lineData} options={{
+                  responsive: true,
+                  maintainAspectRatio: false,
+                  plugins: { legend: { display: false } },
+                  scales: { 
+                    y: { display: false }, 
+                    x: { grid: { display: false }, ticks: { font: { size: 10 } } } 
+                  }
+                }} />
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Chart Column 2 */}
+        <div className="md:col-span-2 space-y-6">
+          <Card className="surface-card h-full">
+            <div className="p-8">
+              <div className="flex items-center justify-between mb-10">
+                <h3 className="text-lg font-bold text-[var(--foreground)]">Status dos Trabalhos</h3>
+                <div className="w-8 h-8 rounded-lg bg-[var(--background)] flex items-center justify-center border border-[var(--border)] text-[var(--muted)]">
+                  <Calendar className="w-4 h-4" />
+                </div>
+              </div>
+              <div className="h-[350px] flex items-center justify-center relative">
+                <div className="absolute inset-0 flex flex-col items-center justify-center pointer-events-none">
+                  <span className="text-4xl font-black text-[var(--foreground)]">{stats.totalTrabalhos}</span>
+                  <span className="text-[10px] font-bold text-[var(--muted-light)] uppercase tracking-widest">Total</span>
+                </div>
+                <Doughnut
+                  data={doughnutData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    cutout: "75%",
+                    plugins: { 
+                      legend: { 
+                        position: 'bottom', 
+                        labels: { usePointStyle: true, boxWidth: 6, font: { size: 10 } } 
+                      } 
+                    }
+                  }}
+                />
+              </div>
+            </div>
+          </Card>
+        </div>
+
+        {/* Row 3: Full Width or Bento Style */}
+        <div className="md:col-span-4 grid grid-cols-1 lg:grid-cols-3 gap-6">
+          {/* Taxa de Aprovação */}
+          <div className="lg:col-span-1">
+            {taxaAprovacaoData && (
+              <Card className="surface-card h-full">
+                <div className="p-8">
+                  <div className="flex items-center justify-between mb-6">
+                    <h3 className="text-lg font-bold text-[var(--foreground)]">Taxa de Aprovação</h3>
+                    <div className="w-8 h-8 rounded-lg bg-[var(--background)] flex items-center justify-center border border-[var(--border)] text-[var(--muted)]">
+                      <CheckCircle className="w-4 h-4" />
+                    </div>
+                  </div>
+                  <div className="h-[250px]">
+                    <Line
+                      data={taxaAprovacaoData}
+                      options={{
+                        responsive: true,
+                        maintainAspectRatio: false,
+                        plugins: { legend: { display: false } },
+                        scales: { 
+                          y: { beginAtZero: true, max: 100, ticks: { font: { size: 10 } } }, 
+                          x: { grid: { display: false }, ticks: { font: { size: 10 } } } 
+                        }
+                      }}
+                    />
                   </div>
                 </div>
-              ))}
-            </div>
+              </Card>
+            )}
           </div>
-        </Card>
-      )}
+
+          {/* Atividades Recentes */}
+          <div className="lg:col-span-2">
+            {stats.atividadesRecentes && stats.atividadesRecentes.length > 0 && (
+              <Card className="surface-card h-full">
+                <div className="p-8">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-lg font-bold text-[var(--foreground)]">Atividades Recentes</h3>
+                    <button className="text-[10px] font-extrabold text-[var(--primary)] hover:underline uppercase tracking-widest">Ver tudo</button>
+                  </div>
+                  <div className="space-y-6">
+                    {stats.atividadesRecentes.slice(0, 5).map((atividade, index) => (
+                      <div
+                        key={index}
+                        className="flex items-start gap-4 group"
+                      >
+                        <div className="mt-1">
+                          <div className="w-10 h-10 rounded-full bg-[var(--background)] flex items-center justify-center border border-[var(--border)] group-hover:border-[var(--primary)] transition-colors">
+                            <span className="text-xs font-bold text-[var(--primary)] text-center">
+                              {(atividade.usuario?.nome || "S").charAt(0)}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="flex-1 border-b border-[var(--border-light)] pb-4 last:border-0">
+                          <div className="flex items-center justify-between mb-1">
+                            <p className="text-sm font-bold text-[var(--foreground)]">
+                              {atividade.usuario?.nome || "Sistema"}
+                            </p>
+                            <span className="text-[10px] font-medium text-[var(--muted-light)]">
+                              {new Date(atividade.createdAt).toLocaleTimeString("pt-BR", { hour: '2-digit', minute: '2-digit' })}
+                            </span>
+                          </div>
+                          <p className="text-sm text-[var(--muted)] leading-tight">
+                            Realizou <span className="text-[var(--primary)] font-bold">{atividade.acao}</span> em {atividade.entidade}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </Card>
+            )}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }

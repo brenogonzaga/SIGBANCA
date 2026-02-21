@@ -1,20 +1,25 @@
 "use client";
 
-import React from "react";
-import {
-  LayoutDashboard,
-  FileText,
-  Users,
-  Calendar,
-  Menu,
-  X,
-  LogOut,
-  User,
+import { 
+  Menu, 
+  X, 
+  User, 
+  LogOut, 
+  LayoutDashboard, 
+  FileText, 
+  Users, 
+  Calendar, 
+  History,
+  ShieldCheck,
+  Search,
   Globe,
+  BarChart3
 } from "lucide-react";
+import { NotificationBell } from "./NotificationBell";
 import { useState } from "react";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useRouter } from "next/navigation";
+import Link from "next/link";
 import { Logo } from "@/app/components/ui/Logo";
 import { Badge } from "@/app/components/ui/Badge";
 
@@ -96,8 +101,9 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
   };
 
   return (
-    <nav className="border-b border-gray-200 dark:border-gray-700 shadow-sm sticky top-0 z-50 backdrop-blur-lg bg-white/95 dark:bg-gray-800/95">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="sticky top-4 z-50 px-4 mb-6">
+      <div className="max-w-7xl mx-auto glass rounded-2xl shadow-lg border border-[var(--border)]">
+        <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between h-16">
           <div className="flex items-center">
             <div
@@ -109,7 +115,7 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden md:flex md:items-center md:space-x-2">
+          <div className="hidden lg:flex lg:items-center lg:space-x-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeView === item.id;
@@ -117,13 +123,13 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
                 <button
                   key={item.id}
                   onClick={() => handleViewChange(item.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-200 ${
+                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
                     isActive
-                      ? "bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-md"
-                      : "text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
+                      ? "bg-[var(--primary)] text-white shadow-[var(--shadow-colored)] scale-105"
+                      : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--border-light)]"
                   }`}
                 >
-                  <Icon className="w-5 h-5" />
+                  <Icon className={`w-4 h-4 ${isActive ? "animate-pulse" : ""}`} />
                   {item.label}
                 </button>
               );
@@ -132,27 +138,50 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
             {/* Link para Trabalhos Públicos */}
             <button
               onClick={() => router.push("/trabalhos-publicos")}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--border-light)] transition-all duration-300"
             >
-              <Globe className="w-5 h-5" />
-              Trabalhos Públicos
+              <Globe className="w-4 h-4" />
+              Público
             </button>
 
-            {/* User Menu Desktop */}
-            <div className="relative">
+            {/* Desktop Actions Section */}
+            <div className="flex items-center gap-3">
+              <NotificationBell />
+
+              {(usuario?.role === "ADMIN" || usuario?.role === "COORDENADOR") && (
+                <>
+                  <Link
+                    href="/relatorios"
+                    className="p-2.5 rounded-xl bg-[var(--surface)] text-[var(--muted)] hover:text-emerald-500 border border-[var(--border)] transition-all flex items-center justify-center"
+                    title="Análise e Relatórios"
+                  >
+                    <BarChart3 className="w-5 h-5" />
+                  </Link>
+                  <Link
+                    href="/auditoria"
+                    className="p-2.5 rounded-xl bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--primary)] border border-[var(--border)] transition-all flex items-center justify-center"
+                    title="Logs de Auditoria"
+                  >
+                    <History className="w-5 h-5" />
+                  </Link>
+                </>
+              )}
+
+              {/* Separador */}
+              <div className="h-6 w-px bg-[var(--border)] mx-1"></div>
+
+              {/* User Menu Desktop */}
+              <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-3 px-4 py-2 rounded-xl text-sm font-semibold text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all duration-200"
+                className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-full bg-[var(--background)] hover:bg-[var(--border-light)] border border-[var(--border)] transition-all duration-300 group"
               >
-                <div className="w-9 h-9 rounded-full bg-gradient-to-br from-blue-600 to-purple-600 flex items-center justify-center text-white font-bold text-sm shadow-md">
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] via-[#7C3AED] to-[var(--accent)] flex items-center justify-center text-white font-bold text-xs shadow-sm group-hover:shadow-md transition-all">
                   {usuario?.nome?.charAt(0).toUpperCase()}
                 </div>
-                <div className="text-left">
-                  <div className="font-semibold">{usuario?.nome}</div>
-                  <div className="text-xs">
-                    <Badge size="sm" variant={roleVariants[usuario?.role || ""] || "default"}>
-                      {roleLabels[usuario?.role || ""]}
-                    </Badge>
+                <div className="text-left hidden xl:block mr-2">
+                  <div className="text-xs font-bold text-[var(--foreground)] truncate max-w-[120px]">
+                    {usuario?.nome}
                   </div>
                 </div>
               </button>
@@ -178,9 +207,10 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
               )}
             </div>
           </div>
+        </div>
 
           {/* Mobile menu button */}
-          <div className="flex items-center md:hidden">
+          <div className="flex items-center lg:hidden">
             <button
               onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
               className="p-2 rounded-xl text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-all"
@@ -193,7 +223,7 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
 
       {/* Mobile Navigation */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-gray-200 dark:border-gray-700 animate-slide-in-up">
+        <div className="lg:hidden border-t border-gray-200 dark:border-gray-700 animate-slide-in-up">
           <div className="px-2 pt-2 pb-3 space-y-1">
             {/* User info mobile */}
             <div className="px-4 py-4 border-b border-gray-200 dark:border-gray-700 flex items-center gap-3">
@@ -261,6 +291,7 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
           </div>
         </div>
       )}
+      </div>
     </nav>
   );
 }

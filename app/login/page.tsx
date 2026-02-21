@@ -108,19 +108,20 @@ export default function LoginPage() {
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900 px-4 py-12 animate-fade-in">
       {/* Padrão de fundo decorativo */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        <div className="absolute -top-40 -right-40 w-80 h-80 bg-purple-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"></div>
+        <div className="absolute top-[-10%] right-[-10%] w-[40vw] h-[40vw] bg-[var(--primary)] rounded-full mix-blend-multiply filter blur-[120px] opacity-[0.08] animate-pulse"></div>
         <div
-          className="absolute -bottom-40 -left-40 w-80 h-80 bg-blue-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"
+          className="absolute bottom-[-10%] left-[-10%] w-[40vw] h-[40vw] bg-[var(--accent)] rounded-full mix-blend-multiply filter blur-[120px] opacity-[0.08] animate-pulse"
           style={{ animationDelay: "2s" }}
         ></div>
         <div
-          className="absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2 w-80 h-80 bg-indigo-300 rounded-full mix-blend-multiply filter blur-xl opacity-20 animate-pulse"
-          style={{ animationDelay: "4s" }}
+          className="absolute top-[30%] left-[20%] w-[20vw] h-[20vw] bg-purple-400 rounded-full mix-blend-multiply filter blur-[80px] opacity-[0.05] animate-float"
         ></div>
+        {/* Subtle grid pattern overlay */}
+        <div className="absolute inset-0 bg-dot-pattern opacity-[0.3]"></div>
       </div>
 
-      <Card className="w-full max-w-md relative animate-scale-in shadow-2xl" gradient>
-        <CardContent className="p-8">
+      <Card className="w-full max-w-md relative animate-scale-in shadow-2xl glass border-white/20" gradient>
+        <CardContent className="p-10">
           <div className="text-center mb-8">
             <div className="flex justify-center mb-6">
               <Logo size="lg" />
@@ -141,19 +142,19 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="email"
-                className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                className="block text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-2 ml-1"
               >
-                Email
+                Email Acadêmico
               </label>
               <div className="relative">
-                <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Mail className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--muted-light)] w-4 h-4" />
                 <input
                   id="email"
                   type="email"
                   required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white transition-all duration-200"
+                  className="input-base pl-11 py-3.5"
                   placeholder="seu.email@exemplo.com"
                 />
               </div>
@@ -162,19 +163,19 @@ export default function LoginPage() {
             <div>
               <label
                 htmlFor="senha"
-                className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2"
+                className="block text-xs font-bold text-[var(--muted)] uppercase tracking-wider mb-2 ml-1"
               >
-                Senha
+                Senha de Acesso
               </label>
               <div className="relative">
-                <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <Lock className="absolute left-4 top-1/2 transform -translate-y-1/2 text-[var(--muted-light)] w-4 h-4" />
                 <input
                   id="senha"
                   type="password"
                   required
                   value={formData.senha}
                   onChange={(e) => setFormData({ ...formData, senha: e.target.value })}
-                  className="w-full pl-11 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-800 dark:text-white transition-all duration-200"
+                  className="input-base pl-11 py-3.5"
                   placeholder="••••••••"
                 />
               </div>

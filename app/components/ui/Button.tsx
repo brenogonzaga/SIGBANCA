@@ -21,25 +21,25 @@ export function Button({
 
   const variants = {
     primary:
-      "bg-blue-600 hover:bg-blue-700 text-white focus:ring-blue-500 shadow-md hover:shadow-lg active:scale-95",
+      "bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-white shadow-[var(--shadow-colored)] hover:shadow-lg active:scale-[0.98]",
     secondary:
-      "bg-gray-200 hover:bg-gray-300 text-gray-900 dark:bg-gray-700 dark:hover:bg-gray-600 dark:text-gray-100 focus:ring-gray-500 shadow-sm hover:shadow-md active:scale-95",
+      "bg-white dark:bg-[var(--surface-elevated)] text-[var(--foreground)] border border-[var(--border)] hover:border-[var(--border-strong)] hover:bg-[var(--background)] shadow-sm active:scale-[0.98]",
     danger:
-      "bg-red-600 hover:bg-red-700 text-white focus:ring-red-500 shadow-md hover:shadow-lg active:scale-95",
+      "bg-[var(--error)] hover:bg-red-700 text-white shadow-md hover:shadow-lg active:scale-[0.98]",
     success:
-      "bg-green-600 hover:bg-green-700 text-white focus:ring-green-500 shadow-md hover:shadow-lg active:scale-95",
+      "bg-[var(--accent)] hover:bg-[var(--accent-hover)] text-white shadow-md hover:shadow-lg active:scale-[0.98]",
     outline:
-      "border-2 border-blue-600 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-950 focus:ring-blue-500 active:scale-95",
+      "border-2 border-[var(--primary)] text-[var(--primary)] hover:bg-[var(--primary-light)] active:scale-[0.98]",
     ghost:
-      "text-gray-700 hover:bg-gray-100 dark:text-gray-300 dark:hover:bg-gray-800 focus:ring-gray-500 active:scale-95",
+      "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--border-light)] active:scale-[0.98]",
     gradient:
-      "bg-gradient-to-r from-blue-600 via-purple-600 to-indigo-700 hover:from-blue-700 hover:via-purple-700 hover:to-indigo-800 text-white focus:ring-purple-500 shadow-lg hover:shadow-xl active:scale-95",
+      "bg-gradient-to-r from-[var(--primary)] to-[#7C3AED] hover:opacity-90 text-white shadow-lg shadow-indigo-500/20 active:scale-[0.98] after:absolute after:inset-0 after:bg-white/10 after:opacity-0 hover:after:opacity-100 after:transition-opacity",
   };
 
   const sizes = {
-    sm: "px-3 py-1.5 text-sm",
-    md: "px-5 py-2.5 text-base",
-    lg: "px-7 py-3.5 text-lg",
+    sm: "px-3 py-1.5 text-xs",
+    md: "px-4 py-2 text-sm",
+    lg: "px-6 py-3 text-base font-bold",
   };
 
   return (

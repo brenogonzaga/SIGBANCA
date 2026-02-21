@@ -6,7 +6,7 @@ import { TrabalhoListItem } from "@/app/types/custom";
 import { Card, CardContent } from "../ui/Card";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
-import { FileText, User, Calendar, Eye, Plus, Edit, Trash2 } from "lucide-react";
+import { FileText, User, Calendar, Eye, Plus, Edit, Trash2, Award } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 import { useAuth } from "@/app/contexts/AuthContext";
@@ -139,130 +139,165 @@ export function TrabalhoList({ onSelectTrabalho }: TrabalhoListProps) {
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center py-12">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-          <p className="text-gray-600">Carregando trabalhos...</p>
-        </div>
+      <div className="flex flex-col items-center justify-center py-20 animate-pulse">
+        <div className="w-16 h-16 border-4 border-[var(--primary-light)] border-t-[var(--primary)] rounded-full animate-spin mb-6"></div>
+        <p className="text-[var(--muted)] font-black uppercase tracking-widest text-xs">Sincronizando Dados...</p>
       </div>
     );
   }
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-10 animate-fade-in relative">
+      <div className="absolute top-0 right-0 w-[40%] h-[40%] bg-[var(--primary)]/5 rounded-full blur-[120px] pointer-events-none"></div>
+
       {/* Cabeçalho com botão Novo */}
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Trabalhos</h2>
+      <div className="flex flex-col md:flex-row md:items-end justify-between gap-8 relative z-10">
+        <div>
+          <Badge variant="info" className="mb-4 bg-[var(--primary-light)]/10 text-[var(--primary)] ring-1 ring-[var(--primary-light)] px-3 py-1 text-[10px] font-black uppercase tracking-widest">
+            Repositório de Produção
+          </Badge>
+          <h2 className="text-4xl md:text-5xl font-black tracking-tight text-[var(--foreground)] font-[Plus\ Jakarta\ Sans] leading-tight">
+            Trabalhos <span className="text-transparent bg-clip-text bg-gradient-to-r from-[var(--primary)] to-[#7C3AED]">Acadêmicos</span>
+          </h2>
+          <p className="text-[var(--muted)] text-base font-medium mt-2 max-w-xl">
+             Acompanhe o status das submissões, prazos e feedbacks da comissão orientadora.
+          </p>
+        </div>
         {canCreate && (
           <Link href="/trabalhos/cadastrar">
-            <Button variant="gradient">
-              <Plus className="mr-2 h-4 w-4" />
+            <Button variant="gradient" size="lg" className="rounded-2xl shadow-xl shadow-indigo-500/10 px-8 py-5 text-base font-black tracking-tight">
+              <Plus className="mr-3 h-5 w-5" />
               Novo Trabalho
             </Button>
           </Link>
         )}
       </div>
 
-      {/* Filtros */}
-      <div className="flex flex-wrap gap-2">
-        <Button
-          size="sm"
-          variant={filtroStatus === "todos" ? "primary" : "secondary"}
-          onClick={() => setFiltroStatus("todos")}
-        >
-          Todos
-        </Button>
-        {Object.entries(statusConfig).map(([status, config]) => (
-          <Button
-            key={status}
-            size="sm"
-            variant={filtroStatus === status ? "primary" : "secondary"}
-            onClick={() => setFiltroStatus(status as TrabalhoStatus)}
+      {/* Filtros Premium */}
+      <div className="relative z-10">
+        <div className="bg-[var(--surface)]/80 backdrop-blur-xl p-2 rounded-[28px] border border-[var(--border)] shadow-xl flex flex-wrap items-center gap-1">
+          <button
+            onClick={() => setFiltroStatus("todos")}
+            className={`px-6 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 ${
+              filtroStatus === "todos"
+                ? "bg-[var(--foreground)] text-white shadow-lg"
+                : "text-[var(--muted)] hover:bg-[var(--surface-light)] hover:text-[var(--foreground)]"
+            }`}
           >
-            {config.label}
-          </Button>
-        ))}
+            Todos os Projetos
+          </button>
+          <div className="w-px h-6 bg-[var(--border-light)] mx-2 hidden sm:block"></div>
+          {Object.entries(statusConfig).map(([status, config]) => (
+            <button
+              key={status}
+              onClick={() => setFiltroStatus(status)}
+              className={`px-4 py-2.5 rounded-2xl text-[10px] font-black uppercase tracking-widest transition-all duration-300 flex items-center gap-2 ${
+                filtroStatus === status
+                  ? "bg-[var(--primary)] text-white shadow-lg shadow-indigo-500/20"
+                  : "text-[var(--muted)] hover:bg-[var(--surface-light)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              <div className={`w-1 h-1 rounded-full ${filtroStatus === status ? "bg-white" : "bg-[var(--muted-light)]"}`}></div>
+              {config.label}
+            </button>
+          ))}
+        </div>
       </div>
 
-      {/* Lista de Trabalhos */}
-      <div className="space-y-4">
+      {/* Lista de Trabalhos optimized for Bento Grid aesthetic */}
+      <div className="grid grid-cols-1 gap-6 relative z-10">
         {trabalhosFiltrados.length === 0 ? (
-          <Card>
-            <CardContent>
-              <p className="text-center text-gray-500 dark:text-gray-400 py-8">
-                Nenhum trabalho encontrado.
-              </p>
-            </CardContent>
-          </Card>
+          <div className="bg-[var(--surface)] p-20 rounded-[40px] border border-dashed border-[var(--border)] text-center animate-fade-in">
+             <div className="w-20 h-20 bg-[var(--surface-light)] rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                <FileText className="w-10 h-10 text-[var(--muted-light)]" />
+             </div>
+             <h3 className="text-xl font-black text-[var(--foreground)] mb-2">Nenhum registro encontrado</h3>
+             <p className="text-[var(--muted)] font-medium max-w-xs mx-auto">Tente ajustar seus filtros ou cadastre um novo trabalho acadêmico.</p>
+          </div>
         ) : (
-          trabalhosFiltrados.map((trabalho) => (
-            <Card key={trabalho.id} hover>
-              <CardContent>
-                <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
-                  <div className="flex-1 space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                        <FileText className="w-5 h-5 text-blue-600 dark:text-blue-300" />
-                      </div>
-                      <div className="flex-1">
-                        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                          {trabalho.titulo}
-                        </h3>
-                        <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
-                          {trabalho.descricao}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-4 text-sm text-gray-600 dark:text-gray-400">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        <span>{trabalho.aluno?.nome || "Aluno não informado"}</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4" />
-                        <span>
-                          Orientador:{" "}
-                          {trabalho.orientador?.titulacao
-                            ? `${trabalho.orientador.titulacao} `
-                            : ""}
-                          {trabalho.orientador?.nome || "Não informado"}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <Calendar className="w-4 h-4" />
-                        <span>
-                          Início:{" "}
-                          {format(new Date(trabalho.dataInicio), "dd/MM/yyyy", {
-                            locale: ptBR,
-                          })}
-                        </span>
-                      </div>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      <Badge variant={statusConfig[trabalho.status]?.variant || "default"}>
-                        {statusConfig[trabalho.status]?.label || trabalho.status}
-                      </Badge>
-                      {trabalho.versoes && trabalho.versoes.length > 0 && (
-                        <Badge variant="default">
-                          Versão {trabalho.versoes[0].numeroVersao}
+          trabalhosFiltrados.map((trabalho, idx) => (
+            <Card key={trabalho.id} className="surface-card group overflow-hidden border border-[var(--border)] hover:border-[var(--primary-light)] transition-all duration-500 rounded-[32px] p-0">
+              <div className="flex flex-col lg:flex-row h-full">
+                <CardContent className="p-8 lg:p-10 flex-1 relative">
+                  <div className="absolute top-0 right-0 p-8 opacity-5 group-hover:opacity-10 transition-opacity pointer-events-none">
+                     <FileText className="w-32 h-32" />
+                  </div>
+                  
+                  <div className="flex flex-col h-full justify-between gap-8">
+                    <div>
+                      <div className="flex items-center gap-3 mb-6">
+                        <Badge 
+                          variant={statusConfig[trabalho.status]?.variant || "default"} 
+                          className="px-4 py-1.5 text-[9px] font-black uppercase tracking-widest rounded-full shadow-sm"
+                        >
+                          {statusConfig[trabalho.status]?.label || trabalho.status}
                         </Badge>
-                      )}
-                      {trabalho.aluno?.curso && (
-                        <Badge variant="info">{trabalho.aluno.curso}</Badge>
-                      )}
+                        <span className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest bg-[var(--surface-light)]/50 px-3 py-1.5 rounded-full border border-[var(--border-light)]">
+                          ID: {trabalho.id.slice(-6).toUpperCase()}
+                        </span>
+                      </div>
+                      
+                      <h3 className="text-2xl md:text-3xl font-black text-[var(--foreground)] group-hover:text-[var(--primary)] transition-colors line-clamp-2 mb-3 tracking-tight font-[Plus\ Jakarta\ Sans]">
+                        {trabalho.titulo}
+                      </h3>
+                      <p className="text-[var(--muted)] font-medium line-clamp-2 mb-0 max-w-3xl leading-relaxed">
+                        {trabalho.descricao}
+                      </p>
+                    </div>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 pt-8 border-t border-[var(--border-light)]">
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-2xl bg-[var(--primary-light)]/40 flex items-center justify-center border border-[var(--primary-light)]/20 shadow-sm">
+                          <User className="w-5 h-5 text-[var(--primary)]" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">Autor</p>
+                          <p className="font-bold text-[var(--foreground)] truncate">{trabalho.aluno?.nome || "Sistema"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-2xl bg-[var(--accent-light)]/40 flex items-center justify-center border border-[var(--accent-light)]/20 shadow-sm">
+                          <Award className="w-5 h-5 text-[var(--accent)]" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">Orientador</p>
+                          <p className="font-bold text-[var(--foreground)] truncate">{trabalho.orientador?.nome || "Substituir"}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="w-10 h-10 rounded-2xl bg-[var(--surface-light)] flex items-center justify-center border border-[var(--border-light)] shadow-sm">
+                          <Calendar className="w-5 h-5 text-[var(--muted-light)]" />
+                        </div>
+                        <div>
+                          <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">Sincronizado</p>
+                          <p className="font-bold text-[var(--foreground)] truncate">
+                            {format(new Date(trabalho.dataInicio), "dd MMM, yyyy", { locale: ptBR })}
+                          </p>
+                        </div>
+                      </div>
                     </div>
                   </div>
+                </CardContent>
 
-                  <div className="flex md:flex-col gap-2">
-                    <Button size="sm" onClick={() => onSelectTrabalho?.(trabalho)}>
-                      <Eye className="w-4 h-4 mr-2" />
-                      Visualizar
-                    </Button>
+                <div className="lg:w-64 bg-[var(--surface-light)]/30 backdrop-blur-sm lg:border-l border-[var(--border)] p-8 flex flex-col justify-center gap-4 group-hover:bg-[var(--surface-light)]/60 transition-all duration-500">
+                  <Button 
+                    variant="gradient" 
+                    size="lg" 
+                    onClick={() => onSelectTrabalho?.(trabalho)} 
+                    className="w-full rounded-2xl shadow-xl shadow-indigo-500/10 py-5 font-black tracking-tight"
+                  >
+                    <Eye className="w-5 h-5 mr-3" />
+                    Gerenciar
+                  </Button>
+                  
+                  <div className="grid grid-cols-2 gap-3">
                     {canEdit(trabalho) && (
-                      <Link href={`/trabalhos/${trabalho.id}/editar`}>
-                        <Button variant="outline" size="sm" className="w-full md:w-auto">
+                      <Link href={`/trabalhos/${trabalho.id}/editar`} className="w-full">
+                        <Button 
+                          variant="ghost" 
+                          size="md" 
+                          className="w-full rounded-xl bg-[var(--surface)] border border-[var(--border)] hover:bg-[var(--background)] py-4"
+                        >
                           <Edit className="w-4 h-4 mr-2" />
                           Editar
                         </Button>
@@ -270,34 +305,34 @@ export function TrabalhoList({ onSelectTrabalho }: TrabalhoListProps) {
                     )}
                     {canDelete(trabalho) && (
                       <Button
-                        variant="danger"
-                        size="sm"
+                        variant="ghost"
+                        size="md"
                         onClick={() =>
                           setTrabalhoToDelete({ id: trabalho.id, titulo: trabalho.titulo })
                         }
-                        className="w-full md:w-auto"
+                        className="w-full rounded-xl text-red-500 hover:text-red-600 hover:bg-red-500/10 border border-transparent hover:border-red-500/20 py-4"
                       >
                         <Trash2 className="w-4 h-4 mr-2" />
-                        Excluir
+                        Remover
                       </Button>
                     )}
                   </div>
                 </div>
-              </CardContent>
+              </div>
             </Card>
           ))
         )}
       </div>
 
-      {/* Modal de Confirmação de Exclusão */}
+      {/* Modal de Confirmação de Exclusão Premium */}
       <ConfirmModal
         isOpen={!!trabalhoToDelete}
         onClose={() => !deletingId && setTrabalhoToDelete(null)}
         onConfirm={handleDelete}
-        title="Excluir Trabalho"
-        message={`Tem certeza que deseja excluir o trabalho "${trabalhoToDelete?.titulo}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
-        cancelText="Cancelar"
+        title="Remover Registro"
+        message={`Você está prestes a remover o trabalho "${trabalhoToDelete?.titulo}". Esta ação é irreversível e apagará todo o histórico de versões e comentários associados.`}
+        confirmText="Confirmar Remoção"
+        cancelText="Manter Registro"
         variant="danger"
         isLoading={!!deletingId}
       />

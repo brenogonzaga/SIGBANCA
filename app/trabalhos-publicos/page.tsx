@@ -6,7 +6,7 @@ import { PublicHeader } from "../components/ui/PublicHeader";
 import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
-import { Search, Filter, Calendar, User, BookOpen } from "lucide-react";
+import { Search, Filter, Calendar, User, BookOpen, Award } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
@@ -95,210 +95,259 @@ export default function TrabalhosPublicosPage() {
 
   if (isLoading) {
     return (
-      <>
-        <PublicHeader title="Trabalhos Públicos" />
-        <div className="flex items-center justify-center min-h-screen bg-gray-50 dark:bg-gray-900">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
-            <p className="text-gray-600 dark:text-gray-400">Carregando trabalhos...</p>
+      <div className="min-h-screen bg-[var(--background)]">
+        <PublicHeader title="Carregando..." />
+        <div className="flex flex-col items-center justify-center min-h-[60vh]">
+          <div className="relative">
+            <div className="w-16 h-16 border-4 border-[var(--primary-light)] border-t-[var(--primary)] rounded-full animate-spin"></div>
+            <div className="absolute inset-0 flex items-center justify-center">
+              <BookOpen className="w-6 h-6 text-[var(--primary)] animate-pulse" />
+            </div>
           </div>
+          <p className="mt-6 text-[var(--muted)] font-black text-xs uppercase tracking-[0.2em] animate-pulse">Consultando Acervo...</p>
         </div>
-      </>
+      </div>
     );
   }
 
   return (
     <>
-      <PublicHeader title="Trabalhos Públicos" />
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-        {/* Header */}
-        <div className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-            <div className="text-center">
-              <h1 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2">
-                Trabalhos de Conclusão de Curso
+      <PublicHeader title="Acervo Digital" />
+      <div className="min-h-screen bg-[var(--background)]">
+        {/* Hero Section */}
+        <div className="relative overflow-hidden bg-[var(--surface)] border-b border-[var(--border)] py-16 md:py-24">
+          <div className="absolute inset-0 bg-dot-pattern opacity-[0.2]"></div>
+          <div className="absolute top-0 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-gradient-to-b from-[var(--primary)]/10 to-transparent blur-[120px] rounded-full pointer-events-none"></div>
+          
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+            <div className="text-center max-w-3xl mx-auto">
+              <Badge variant="info" className="mb-4 uppercase tracking-[0.2em] text-[10px] font-black py-1 px-4">Repositório Acadêmico</Badge>
+              <h1 className="text-4xl md:text-6xl font-black text-[var(--foreground)] tracking-tight font-[Plus\ Jakarta\ Sans] mb-6">
+                Explore o Conhecimento Produzido
               </h1>
-              <p className="text-lg text-gray-600 dark:text-gray-400">
-                Consulte os trabalhos aprovados e defendidos
+              <p className="text-lg text-[var(--muted)] font-medium leading-relaxed">
+                Consulte os Trabalhos de Conclusão de Curso aprovados e defendidos pela nossa comunidade acadêmica.
               </p>
             </div>
           </div>
         </div>
 
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
           {/* Filtros e Busca */}
-          <Card className="mb-6">
-            <CardContent className="p-6">
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <Card className="surface-card mb-12">
+            <div className="p-8">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
                 {/* Busca */}
-                <div className="md:col-span-2">
-                  <div className="relative">
-                    <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                <div className="lg:col-span-2">
+                  <div className="relative group">
+                    <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-[var(--muted)] w-5 h-5 group-focus-within:text-[var(--primary)] transition-colors" />
                     <input
                       type="text"
                       placeholder="Buscar por título, autor, palavras-chave..."
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
-                      className="w-full pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                      className="w-full pl-12 pr-4 py-3 bg-[var(--background)] border border-[var(--border)] rounded-2xl focus:ring-4 focus:ring-[var(--primary-light)] focus:border-[var(--primary)] outline-none transition-all text-[var(--foreground)] placeholder:text-[var(--muted-light)]"
                     />
                   </div>
                 </div>
 
                 {/* Filtro de Curso */}
                 <div>
-                  <select
-                    value={cursoFilter}
-                    onChange={(e) => setCursoFilter(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="">Todos os cursos</option>
-                    {cursos.map((curso) => (
-                      <option key={curso} value={curso}>
-                        {curso}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={cursoFilter}
+                      onChange={(e) => setCursoFilter(e.target.value)}
+                      className="w-full pl-4 pr-10 py-3 bg-[var(--background)] border border-[var(--border)] rounded-2xl appearance-none focus:ring-4 focus:ring-[var(--primary-light)] focus:border-[var(--primary)] outline-none transition-all text-[var(--foreground)]"
+                    >
+                      <option value="">Cursos (Todos)</option>
+                      {cursos.map((curso) => (
+                        <option key={curso} value={curso}>
+                          {curso}
+                        </option>
+                      ))}
+                    </select>
+                    <Filter className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] pointer-events-none" />
+                  </div>
                 </div>
 
                 {/* Filtro de Ano */}
                 <div>
-                  <select
-                    value={anoFilter}
-                    onChange={(e) => setAnoFilter(e.target.value)}
-                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
-                  >
-                    <option value="">Todos os anos</option>
-                    {anos.map((ano) => (
-                      <option key={ano} value={ano}>
-                        {ano}
-                      </option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <select
+                      value={anoFilter}
+                      onChange={(e) => setAnoFilter(e.target.value)}
+                      className="w-full pl-4 pr-10 py-3 bg-[var(--background)] border border-[var(--border)] rounded-2xl appearance-none focus:ring-4 focus:ring-[var(--primary-light)] focus:border-[var(--primary)] outline-none transition-all text-[var(--foreground)]"
+                    >
+                      <option value="">Anos (Todos)</option>
+                      {anos.map((ano) => (
+                        <option key={ano} value={ano}>
+                          {ano}
+                        </option>
+                      ))}
+                    </select>
+                    <Calendar className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-[var(--muted)] pointer-events-none" />
+                  </div>
                 </div>
               </div>
 
-              <div className="mt-4 flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                <Filter className="w-4 h-4" />
-                <span>
-                  {trabalhosFiltrados.length} trabalho
-                  {trabalhosFiltrados.length !== 1 ? "s" : ""} encontrado
-                  {trabalhosFiltrados.length !== 1 ? "s" : ""}
-                </span>
+              <div className="mt-6 flex items-center justify-between">
+                <div className="flex items-center gap-2 text-xs font-bold text-[var(--muted)] uppercase tracking-widest">
+                  <BookOpen className="w-4 h-4" />
+                  <span>
+                    {trabalhosFiltrados.length} Registros Encontrados
+                  </span>
+                </div>
+                {searchTerm && (
+                  <button 
+                    onClick={() => setSearchTerm("")}
+                    className="text-xs font-black text-[var(--danger)] hover:underline uppercase tracking-widest"
+                  >
+                    Limpar Busca
+                  </button>
+                )}
               </div>
-            </CardContent>
+            </div>
           </Card>
 
           {/* Lista de Trabalhos */}
           <div className="grid gap-6">
             {trabalhosFiltrados.length === 0 ? (
-              <Card>
-                <CardContent className="p-8 text-center text-gray-500 dark:text-gray-400">
-                  <BookOpen className="w-12 h-12 mx-auto mb-4 text-gray-400" />
-                  <p>Nenhum trabalho encontrado com os filtros selecionados.</p>
-                </CardContent>
-              </Card>
+              <div className="py-20 text-center">
+                <div className="w-20 h-20 bg-[var(--surface)] border border-[var(--border)] rounded-full flex items-center justify-center mx-auto mb-6">
+                  <BookOpen className="w-10 h-10 text-[var(--muted-light)]" />
+                </div>
+                <h3 className="text-xl font-bold text-[var(--foreground)] mb-2">Nenhum resultado</h3>
+                <p className="text-[var(--muted)] max-w-md mx-auto">Não encontramos trabalhos que correspondam aos seus critérios de busca.</p>
+              </div>
             ) : (
               trabalhosFiltrados.map((trabalho) => (
-                <Card key={trabalho.id} className="hover:shadow-lg transition-shadow">
-                  <CardHeader>
-                    <div className="flex justify-between items-start">
-                      <div className="flex-1">
-                        <CardTitle className="text-xl mb-2">{trabalho.titulo}</CardTitle>
-                        <p className="text-gray-600 dark:text-gray-400 text-sm line-clamp-2">
-                          {trabalho.descricao}
-                        </p>
-                      </div>
-                    </div>
-                  </CardHeader>
-                  <CardContent className="space-y-4">
-                    {/* Informações básicas */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-600 dark:text-gray-400">
-                          <strong>Autor:</strong> {trabalho.aluno.nome}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <User className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-600 dark:text-gray-400">
-                          <strong>Orientador:</strong> {trabalho.orientador.titulacao}{" "}
-                          {trabalho.orientador.nome}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <BookOpen className="w-4 h-4 text-gray-500" />
-                        <span className="text-gray-600 dark:text-gray-400">
-                          <strong>Curso:</strong> {trabalho.curso}
-                        </span>
-                      </div>
-                      {trabalho.dataDefesa && (
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4 text-gray-500" />
-                          <span className="text-gray-600 dark:text-gray-400">
-                            <strong>Defesa:</strong>{" "}
-                            {format(new Date(trabalho.dataDefesa), "dd/MM/yyyy", {
-                              locale: ptBR,
-                            })}
-                          </span>
-                        </div>
-                      )}
-                    </div>
-
-                    {/* Palavras-chave */}
-                    {trabalho.palavrasChave.length > 0 && (
-                      <div className="flex flex-wrap gap-2">
-                        {trabalho.palavrasChave.map((palavra, index) => (
-                          <Badge key={index} variant="default">
-                            {palavra}
-                          </Badge>
-                        ))}
-                      </div>
-                    )}
-
-                    {/* Nota e Membros da Banca */}
-                    {trabalho.banca && (
-                      <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                        <div className="flex flex-wrap gap-4 items-center">
-                          {trabalho.banca.notaFinal && (
-                            <div>
-                              <span className="text-sm text-gray-600 dark:text-gray-400">
-                                Nota Final:{" "}
-                              </span>
-                              <Badge variant="success">
-                                {trabalho.banca.notaFinal.toFixed(1)}
+                <Card key={trabalho.id} className="surface-card group hover:shadow-xl hover:-translate-y-1 transition-all duration-300">
+                  <div className="p-8">
+                    <div className="flex flex-col md:flex-row gap-8">
+                      <div className="flex-1 space-y-6">
+                        <div className="space-y-2">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant="info" className="uppercase tracking-[0.1em] text-[10px] font-black">{trabalho.curso}</Badge>
+                            {trabalho.banca?.notaFinal && trabalho.banca.notaFinal >= 9 && (
+                              <Badge variant="success" className="uppercase tracking-[0.1em] text-[10px] font-black">
+                                <Award className="w-3 h-3 mr-1" /> Destaque
                               </Badge>
+                            )}
+                          </div>
+                          <h2 className="text-2xl font-black text-[var(--foreground)] tracking-tight leading-tight group-hover:text-[var(--primary)] transition-colors">
+                            {trabalho.titulo}
+                          </h2>
+                          <p className="text-[var(--muted)] text-sm line-clamp-2 font-medium leading-relaxed">
+                            {trabalho.descricao}
+                          </p>
+                        </div>
+
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-y-4 gap-x-8">
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-[var(--background)] flex items-center justify-center border border-[var(--border)]">
+                              <User className="w-4 h-4 text-[var(--primary)]" />
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-[var(--muted-light)] uppercase tracking-widest leading-none mb-1">Autor</p>
+                              <p className="text-sm font-bold text-[var(--foreground)] truncate">{trabalho.aluno.nome}</p>
+                            </div>
+                          </div>
+                          
+                          <div className="flex items-center gap-3">
+                            <div className="w-8 h-8 rounded-lg bg-[var(--background)] flex items-center justify-center border border-[var(--border)]">
+                              <User className="w-4 h-4 text-[var(--accent)]" />
+                            </div>
+                            <div>
+                              <p className="text-[10px] font-bold text-[var(--muted-light)] uppercase tracking-widest leading-none mb-1">Orientador</p>
+                              <p className="text-sm font-bold text-[var(--foreground)] truncate">
+                                {trabalho.orientador.titulacao} {trabalho.orientador.nome}
+                              </p>
+                            </div>
+                          </div>
+
+                          {trabalho.dataDefesa && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-[var(--background)] flex items-center justify-center border border-[var(--border)]">
+                                <Calendar className="w-4 h-4 text-[var(--muted)]" />
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-bold text-[var(--muted-light)] uppercase tracking-widest leading-none mb-1">Data da Defesa</p>
+                                <p className="text-sm font-bold text-[var(--foreground)]">
+                                  {format(new Date(trabalho.dataDefesa), "dd 'de' MMMM 'de' yyyy", { locale: ptBR })}
+                                </p>
+                              </div>
                             </div>
                           )}
-                          <div className="text-sm text-gray-600 dark:text-gray-400">
-                            <strong>Banca:</strong>{" "}
-                            {trabalho.banca.membros.map((m) => m.usuario.nome).join(", ")}
-                          </div>
-                        </div>
-                      </div>
-                    )}
 
-                    {/* Botão Ver Detalhes */}
-                    <div className="pt-4 border-t border-gray-200 dark:border-gray-700">
-                      <Button
-                        variant="secondary"
-                        size="sm"
-                        onClick={() => router.push(`/trabalhos-publicos/${trabalho.id}`)}
-                      >
-                        Ver Detalhes
-                      </Button>
+                          {trabalho.banca?.notaFinal && (
+                            <div className="flex items-center gap-3">
+                              <div className="w-8 h-8 rounded-lg bg-[var(--success-light)] flex items-center justify-center border border-[var(--success)]/20">
+                                <Award className="w-4 h-4 text-[var(--success)]" />
+                              </div>
+                              <div>
+                                <p className="text-[10px] font-bold text-[var(--muted-light)] uppercase tracking-widest leading-none mb-1">Avaliação</p>
+                                <p className="text-sm font-black text-[var(--success)]">Nota {trabalho.banca.notaFinal.toFixed(1)}</p>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+
+                        {/* Palavras-chave */}
+                        {trabalho.palavrasChave.length > 0 && (
+                          <div className="flex flex-wrap gap-2 pt-2">
+                            {trabalho.palavrasChave.map((palavra, index) => (
+                              <span key={index} className="text-[10px] font-black text-[var(--muted)] bg-[var(--background)] border border-[var(--border)] px-2 py-1 rounded-md uppercase tracking-wider">
+                                {palavra}
+                              </span>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      <div className="flex flex-col justify-between items-end border-l border-[var(--border)] pl-8 hidden md:flex min-w-[140px]">
+                        <div className="text-right">
+                          <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-[0.2em] mb-1">Status</p>
+                          <Badge variant="success" className="shadow-sm shadow-emerald-500/10">Defendido</Badge>
+                        </div>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => router.push(`/trabalhos-publicos/${trabalho.id}`)}
+                          className="w-full rounded-xl font-bold group-hover:bg-[var(--primary)] group-hover:text-white transition-all shadow-md group-hover:shadow-[var(--primary)]/20"
+                        >
+                          Ver Detalhes
+                        </Button>
+                      </div>
+
+                      <div className="md:hidden pt-4 border-t border-[var(--border)]">
+                        <Button
+                          variant="gradient"
+                          size="lg"
+                          onClick={() => router.push(`/trabalhos-publicos/${trabalho.id}`)}
+                          className="w-full rounded-2xl font-bold"
+                        >
+                          Ver Detalhes
+                        </Button>
+                      </div>
                     </div>
-                  </CardContent>
+                  </div>
                 </Card>
               ))
             )}
           </div>
 
           {/* Link para Login */}
-          <div className="mt-8 text-center">
-            <Button variant="secondary" onClick={() => router.push("/login")}>
-              Acessar Sistema Completo
-            </Button>
+          <div className="mt-20 text-center pb-12">
+            <div className="inline-flex flex-col items-center">
+              <p className="text-sm text-[var(--muted)] font-medium mb-4">Faz parte da instituição?</p>
+              <Button 
+                variant="outline" 
+                onClick={() => router.push("/login")}
+                className="rounded-2xl px-12 py-6 h-14 font-black tracking-tight hover:bg-[var(--border-light)] border-2 border-[var(--border)] transition-all"
+              >
+                Acessar Portal do Aluno/Professor
+              </Button>
+            </div>
           </div>
         </div>
       </div>

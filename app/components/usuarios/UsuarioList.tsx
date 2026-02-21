@@ -135,143 +135,169 @@ export function UsuarioList() {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex justify-between items-center">
-        <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Usuários</h2>
+    <div className="space-y-8 animate-fade-in">
+      {/* Header Section */}
+      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-2 border-b border-[var(--border-light)]">
+        <div>
+          <h2 className="text-3xl font-black text-[var(--foreground)] tracking-tight font-[Plus\ Jakarta\ Sans]">
+            Gestão de <span className="bg-gradient-to-r from-[var(--primary)] to-[#7C3AED] bg-clip-text text-transparent italic">Estatutários</span>
+          </h2>
+          <p className="text-[var(--muted)] font-medium mt-1">Administre os perfis e permissões de acesso ao sistema.</p>
+        </div>
         {(usuario?.role === "ADMIN" || usuario?.role === "COORDENADOR") && (
           <Link href="/usuarios/cadastrar">
-            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
-              <UserPlus className="w-4 h-4" />
-              Novo Usuário
+            <button className="group relative flex items-center gap-3 px-8 py-4 bg-[var(--foreground)] text-white rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-black/10">
+              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[var(--primary)] to-[#7C3AED] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+              <UserPlus className="w-5 h-5 relative z-10" />
+              <span className="text-sm font-black uppercase tracking-widest relative z-10">Novo Usuário</span>
             </button>
           </Link>
         )}
       </div>
 
-      {/* Filtros */}
-      <Card>
-        <div className="p-4">
-          <div className="flex gap-2 flex-wrap">
-            <button
-              onClick={() => setFiltroRole("todos")}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                filtroRole === "todos"
-                  ? "bg-blue-600 text-white"
-                  : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-              }`}
-            >
-              Todos ({usuarios.length})
-            </button>
-            {Object.entries(roleConfig).map(([role, config]) => {
-              const count = usuarios.filter((u) => u.role === role).length;
-              return (
-                <button
-                  key={role}
-                  onClick={() => setFiltroRole(role)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors ${
-                    filtroRole === role
-                      ? "bg-blue-600 text-white"
-                      : "bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-300 dark:hover:bg-gray-600"
-                  }`}
-                >
-                  {config.label} ({count})
-                </button>
-              );
-            })}
+      {/* Filters Section - Bento Style */}
+      <div className="bg-[var(--surface-light)]/40 backdrop-blur-md p-6 rounded-[32px] border border-[var(--border)] border-dashed">
+        <div className="flex items-center gap-4 mb-4">
+          <div className="w-10 h-10 rounded-xl bg-[var(--primary)]/10 flex items-center justify-center text-[var(--primary)]">
+            <User className="w-5 h-5" />
           </div>
+          <h3 className="text-sm font-black text-[var(--foreground)] uppercase tracking-widest">Filtrar por Categoria</h3>
         </div>
-      </Card>
+        <div className="flex gap-3 flex-wrap">
+          <button
+            onClick={() => setFiltroRole("todos")}
+            className={`px-6 py-3 rounded-[16px] text-xs font-black transition-all duration-300 tracking-wider ${
+              filtroRole === "todos"
+                ? "bg-[var(--foreground)] text-white shadow-xl scale-105"
+                : "bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--foreground)] border border-[var(--border)]"
+            }`}
+          >
+            TODOS ({usuarios.length})
+          </button>
+          {Object.entries(roleConfig).map(([role, config]) => {
+            const count = usuarios.filter((u) => u.role === role).length;
+            return (
+              <button
+                key={role}
+                onClick={() => setFiltroRole(role)}
+                className={`px-6 py-3 rounded-[16px] text-xs font-black transition-all duration-300 tracking-wider ${
+                  filtroRole === role
+                    ? "bg-[var(--foreground)] text-white shadow-xl scale-105"
+                    : "bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--foreground)] border border-[var(--border)]"
+                }`}
+              >
+                {config.label.toUpperCase()} ({count})
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
-      {/* Lista de Usuários */}
-      <div className="grid gap-4">
+      {/* User Grid - Bento Style */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {usuariosFiltrados.length === 0 ? (
-          <Card>
-            <div className="p-8 text-center text-gray-500 dark:text-gray-400">
-              Nenhum usuário encontrado
+          <div className="md:col-span-2 lg:col-span-3 py-20 bg-[var(--surface)] rounded-[40px] border border-[var(--border)] flex flex-col items-center justify-center text-center">
+            <div className="w-20 h-20 rounded-3xl bg-[var(--surface-light)] flex items-center justify-center text-[var(--muted-light)] mb-6">
+              <User className="w-10 h-10" />
             </div>
-          </Card>
+            <p className="text-xl font-black text-[var(--foreground)] tracking-tight">Nenhum perfil identificado</p>
+            <p className="text-[var(--muted)] font-medium">Não encontramos usuários para esta categoria.</p>
+          </div>
         ) : (
           usuariosFiltrados.map((usuario) => (
-            <Card key={usuario.id}>
-              <div className="p-6">
-                <div className="flex justify-between items-start mb-4">
-                  <div className="flex items-center gap-3">
-                    <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                      <User className="w-6 h-6 text-blue-600" />
+            <div 
+              key={usuario.id} 
+              className="group bg-[var(--surface)] hover:bg-[var(--surface-light)] rounded-[40px] border border-[var(--border)] transition-all duration-500 hover:shadow-2xl hover:shadow-[var(--primary)]/5 hover:-translate-y-2 overflow-hidden flex flex-col"
+            >
+              <div className="p-8 flex-1">
+                <div className="flex justify-between items-start mb-6">
+                  <div className="relative">
+                    <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-[var(--primary)]/10 to-[#7C3AED]/10 flex items-center justify-center text-[var(--primary)] group-hover:scale-110 transition-transform duration-500">
+                      <User className="w-8 h-8" />
                     </div>
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                        {usuario.nome}
-                      </h3>
-                      <Badge variant={roleConfig[usuario.role]?.variant || "default"}>
-                        {roleConfig[usuario.role]?.label || usuario.role}
-                      </Badge>
-                    </div>
+                    {usuario.ativo ? (
+                      <div className="absolute -top-1 -right-1 w-4 h-4 bg-emerald-500 rounded-full border-4 border-[var(--surface)] shadow-lg animate-pulse"></div>
+                    ) : (
+                        <div className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full border-4 border-[var(--surface)] shadow-lg"></div>
+                    )}
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Badge variant={usuario.ativo ? "success" : "danger"}>
-                      {usuario.ativo ? "Ativo" : "Inativo"}
-                    </Badge>
-                    <div className="flex gap-2">
-                      {canEdit && (
-                        <button
-                          onClick={() => router.push(`/usuarios/${usuario.id}/editar`)}
-                          className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors flex items-center justify-center"
-                          title="Editar usuário"
-                        >
-                          <Edit className="w-5 h-5" />
-                        </button>
-                      )}
-                      {canDelete && (
-                        <button
-                          onClick={() =>
-                            setUsuarioToDelete({ id: usuario.id, nome: usuario.nome })
-                          }
-                          className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors flex items-center justify-center"
-                          title="Excluir usuário"
-                        >
-                          <Trash2 className="w-5 h-5" />
-                        </button>
-                      )}
-                    </div>
+                  <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
+                    {canEdit && (
+                      <button
+                        onClick={() => router.push(`/usuarios/${usuario.id}/editar`)}
+                        className="w-10 h-10 bg-white border border-[var(--border)] rounded-xl flex items-center justify-center text-[var(--primary)] hover:bg-[var(--primary-light)]/20 transition-all shadow-sm"
+                        title="Ajustar Perfil"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
+                    )}
+                    {canDelete && (
+                      <button
+                        onClick={() =>
+                          setUsuarioToDelete({ id: usuario.id, nome: usuario.nome })
+                        }
+                        className="w-10 h-10 bg-white border border-[var(--border)] rounded-xl flex items-center justify-center text-red-500 hover:bg-red-50 transition-all shadow-sm"
+                        title="Revogar Acesso"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </button>
+                    )}
                   </div>
                 </div>
 
-                <div className="space-y-2 text-sm text-gray-600 dark:text-gray-400">
+                <div className="space-y-1 mb-6">
+                  <h3 className="text-xl font-black text-[var(--foreground)] tracking-tight leading-tight group-hover:text-[var(--primary)] transition-colors">
+                    {usuario.nome}
+                  </h3>
                   <div className="flex items-center gap-2">
-                    <Mail className="w-4 h-4" />
-                    <span>{usuario.email}</span>
+                    <Badge variant={roleConfig[usuario.role]?.variant || "default"} className="font-black text-[10px]">
+                      {roleConfig[usuario.role]?.label.toUpperCase() || usuario.role}
+                    </Badge>
+                  </div>
+                </div>
+
+                <div className="space-y-3 pt-6 border-t border-[var(--border-light)] border-dashed">
+                  <div className="flex items-center gap-3 text-sm font-medium text-[var(--muted)]">
+                    <div className="w-8 h-8 rounded-lg bg-[var(--surface-light)] flex items-center justify-center">
+                      <Mail className="w-3.5 h-3.5" />
+                    </div>
+                    <span className="truncate">{usuario.email}</span>
                   </div>
 
                   {usuario.matricula && (
-                    <div className="flex items-center gap-2">
-                      <BookOpen className="w-4 h-4" />
-                      <span>Matrícula: {usuario.matricula}</span>
+                    <div className="flex items-center gap-3 text-sm font-medium text-[var(--muted)]">
+                      <div className="w-8 h-8 rounded-lg bg-[var(--surface-light)] flex items-center justify-center">
+                        <BookOpen className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="font-bold text-[var(--foreground)]">{usuario.matricula}</span>
                     </div>
                   )}
 
                   {usuario.curso && (
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className="w-4 h-4" />
-                      <span>{usuario.curso}</span>
+                    <div className="flex items-center gap-3 text-sm font-medium text-[var(--muted)]">
+                      <div className="w-8 h-8 rounded-lg bg-[var(--surface-light)] flex items-center justify-center">
+                        <GraduationCap className="w-3.5 h-3.5" />
+                      </div>
+                      <span className="truncate">{usuario.curso}</span>
                     </div>
                   )}
 
                   {usuario.titulacao && (
-                    <div className="flex items-center gap-2">
-                      <GraduationCap className="w-4 h-4" />
-                      <span>Titulação: {usuario.titulacao}</span>
-                    </div>
-                  )}
-
-                  {usuario.departamento && (
-                    <div className="text-sm text-gray-600 dark:text-gray-400">
-                      <strong>Departamento:</strong> {usuario.departamento}
+                    <div className="flex items-center gap-3 text-sm font-medium text-[var(--muted)]">
+                      <div className="w-8 h-8 rounded-lg bg-[var(--surface-light)] flex items-center justify-center">
+                        <GraduationCap className="w-3.5 h-3.5" />
+                      </div>
+                      <span>{usuario.titulacao}</span>
                     </div>
                   )}
                 </div>
               </div>
-            </Card>
+              
+              <div className="p-4 bg-[var(--surface-light)]/30 border-t border-[var(--border-light)] flex justify-between items-center px-8">
+                  <span className="text-[10px] font-black text-[var(--muted-light)] tracking-widest uppercase">ID: {usuario.id.slice(-6)}</span>
+                  <div className={`w-2 h-2 rounded-full ${usuario.ativo ? 'bg-emerald-500' : 'bg-red-500'}`}></div>
+              </div>
+            </div>
           ))
         )}
       </div>
@@ -280,9 +306,9 @@ export function UsuarioList() {
         isOpen={!!usuarioToDelete}
         onClose={() => setUsuarioToDelete(null)}
         onConfirm={handleDelete}
-        title="Confirmar Exclusão"
-        message={`Tem certeza que deseja excluir o usuário "${usuarioToDelete?.nome}"? Esta ação não pode ser desfeita.`}
-        confirmText="Excluir"
+        title="Revogar Acesso"
+        message={`Tem certeza que deseja remover o acesso de "${usuarioToDelete?.nome}"? Esta operação é definitiva e impactará a estrutura acadêmica.`}
+        confirmText="Confirmar Revogação"
         isLoading={isDeleting}
       />
     </div>

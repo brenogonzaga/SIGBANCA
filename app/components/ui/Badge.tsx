@@ -17,17 +17,18 @@ export function Badge({
 }: BadgeProps) {
   const variants = {
     default:
-      "bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300 ring-1 ring-gray-300 dark:ring-gray-600",
+      "bg-[var(--border-light)] text-[var(--muted)] ring-1 ring-[var(--border)]",
     success:
-      "bg-green-100 text-green-800 dark:bg-green-900/50 dark:text-green-300 ring-1 ring-green-300 dark:ring-green-600",
+      "bg-[var(--success-light)] text-[var(--success)] ring-1 ring-[#10B981]/30",
     warning:
-      "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/50 dark:text-yellow-300 ring-1 ring-yellow-300 dark:ring-yellow-600",
+      "bg-[var(--warning-light)] text-[var(--warning)] ring-1 ring-[#F59E0B]/30",
     danger:
-      "bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300 ring-1 ring-red-300 dark:ring-red-600",
-    info: "bg-blue-100 text-blue-800 dark:bg-blue-900/50 dark:text-blue-300 ring-1 ring-blue-300 dark:ring-blue-600",
+      "bg-[var(--error-light)] text-[var(--error)] ring-1 ring-[#EF4444]/30",
+    info: 
+      "bg-[var(--info-light)] text-[var(--info)] ring-1 ring-[#3B82F6]/30",
     purple:
-      "bg-purple-100 text-purple-800 dark:bg-purple-900/50 dark:text-purple-300 ring-1 ring-purple-300 dark:ring-purple-600",
-    gradient: "bg-gradient-to-r from-blue-500 to-purple-600 text-white shadow-md",
+      "bg-[#F5F3FF] text-[#7C3AED] dark:bg-[#2E204E] dark:text-[#A78BFA] ring-1 ring-[#7C3AED]/30",
+    gradient: "bg-gradient-to-r from-[var(--primary)] to-[#7C3AED] text-white shadow-sm",
   };
 
   const sizes = {

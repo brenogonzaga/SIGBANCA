@@ -57,40 +57,63 @@ export function Modal({
   };
 
   return (
-    <div className="fixed inset-0 z-50 overflow-y-auto">
-      {/* Backdrop */}
+    <div className="fixed inset-0 z-50 overflow-y-auto flex items-center justify-center p-4">
+      {/* Backdrop with extreme glassmorphism */}
       <div
-        className="fixed inset-0 bg-black bg-opacity-50 transition-opacity"
+        className="fixed inset-0 bg-[#0F172A]/40 backdrop-blur-xl transition-all duration-500 animate-in fade-in"
         onClick={!isLoading ? onClose : undefined}
       />
 
-      {/* Modal */}
-      <div className="flex min-h-full items-center justify-center p-4">
-        <div
-          className={`relative bg-white dark:bg-gray-800 rounded-lg shadow-xl w-full ${sizeClasses[size]} transform transition-all`}
-        >
-          {/* Header */}
-          <div className="flex items-center justify-between p-6 border-b border-gray-200 dark:border-gray-700">
-            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{title}</h3>
+      {/* Modal Container */}
+      <div
+        className={`relative w-full ${sizeClasses[size]} transform transition-all duration-500 animate-in zoom-in-95 slide-in-from-bottom-4 shadow-[0_32px_128px_-16px_rgba(0,0,0,0.4)] rounded-[40px] overflow-hidden group`}
+      >
+        {/* Subtle Gradient Border */}
+        <div className="absolute inset-0 p-[2px] rounded-[40px] bg-gradient-to-br from-white/20 via-transparent to-white/5 pointer-events-none z-10"></div>
+        
+        <div className="relative bg-[var(--surface)] dark:bg-[#1E293B] rounded-[38px] overflow-hidden z-0">
+          {/* Header Section */}
+          <div className="flex items-center justify-between px-8 py-7 border-b border-[var(--border-light)] relative overflow-hidden">
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[var(--primary)] via-[#7C3AED] to-emerald-500 opacity-50"></div>
+            
+            <h3 className="text-2xl font-black text-[var(--foreground)] tracking-tight font-[Plus\ Jakarta\ Sans]">
+              {title}
+            </h3>
+            
             <button
               onClick={onClose}
               disabled={isLoading}
-              className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-10 h-10 rounded-full flex items-center justify-center text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--surface-light)] transition-all disabled:opacity-50 disabled:cursor-not-allowed group/close"
             >
-              <X className="w-6 h-6" />
+              <X className="w-5 h-5 transition-transform group-hover/close:rotate-90 duration-300" />
             </button>
           </div>
 
-          {/* Body */}
-          <div className="p-6">{children}</div>
+          {/* Body Section */}
+          <div className="px-8 py-10 max-h-[70vh] overflow-y-auto custom-scrollbar relative">
+            <div className="absolute top-4 right-8 w-32 h-32 bg-[var(--primary)]/5 rounded-full blur-3xl pointer-events-none"></div>
+            <div className="relative z-10 text-[var(--foreground)] leading-relaxed font-medium">
+              {children}
+            </div>
+          </div>
 
-          {/* Footer */}
+          {/* Footer Section */}
           {onConfirm && (
-            <div className="flex items-center justify-end gap-3 p-6 border-t border-gray-200 dark:border-gray-700">
-              <Button variant="outline" onClick={onClose} disabled={isLoading}>
+            <div className="flex items-center justify-end gap-5 px-8 py-8 bg-[var(--surface-light)]/30 backdrop-blur-sm border-t border-[var(--border-light)]">
+              <button
+                disabled={isLoading}
+                onClick={onClose}
+                className="px-6 py-3 text-xs font-black text-[var(--muted)] hover:text-[var(--foreground)] transition-all uppercase tracking-widest"
+              >
                 {cancelText}
-              </Button>
-              <Button variant={confirmVariant} onClick={onConfirm} isLoading={isLoading}>
+              </button>
+              <Button 
+                variant={confirmVariant === "primary" ? "gradient" : confirmVariant} 
+                onClick={onConfirm} 
+                isLoading={isLoading}
+                size="lg"
+                className="rounded-2xl px-10 shadow-xl shadow-[var(--primary)]/10 hover:shadow-2xl hover:-translate-y-0.5 transition-all"
+              >
                 {confirmText}
               </Button>
             </div>
@@ -136,7 +159,15 @@ export function ConfirmModal({
       isLoading={isLoading}
       size="sm"
     >
-      <p className="text-gray-600 dark:text-gray-400">{message}</p>
+      <div className="space-y-4">
+        <p className="text-[var(--foreground)] text-lg font-medium leading-relaxed">
+          {message}
+        </p>
+        <div className="p-4 rounded-2xl bg-[var(--danger)]/5 border border-[var(--danger)]/10 text-[var(--danger)] text-xs font-bold uppercase tracking-wide flex items-start gap-3">
+          <div className="w-1.5 h-1.5 rounded-full bg-[var(--danger)] mt-1 animate-pulse" />
+          Esta ação é definitiva e não poderá ser revertida.
+        </div>
+      </div>
     </Modal>
   );
 }

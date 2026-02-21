@@ -64,22 +64,36 @@ export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <ToastContext.Provider value={{ showToast }}>
       {children}
-      <div className="fixed top-4 right-4 z-50 space-y-2">
+      <div className="fixed bottom-8 right-8 z-[100] space-y-4">
         {toasts.map((toast) => (
           <div
             key={toast.id}
-            className={`flex items-center gap-3 px-4 py-3 rounded-lg border shadow-lg animate-slide-in-right min-w-[300px] max-w-md ${getStyles(
+            className={`flex items-center gap-5 px-6 py-5 rounded-[24px] border-2 backdrop-blur-2xl shadow-2xl animate-in slide-in-from-right-8 duration-500 min-w-[340px] max-w-md group overflow-hidden relative ${getStyles(
               toast.type
             )}`}
           >
-            {getIcon(toast.type)}
-            <p className="flex-1 text-sm font-medium">{toast.message}</p>
+            {/* Glossy Overlay */}
+            <div className="absolute inset-0 bg-white/5 pointer-events-none group-hover:bg-white/10 transition-colors"></div>
+            
+            <div className="relative z-10 p-2 rounded-lg bg-white/90 shadow-sm">
+               {getIcon(toast.type)}
+            </div>
+            
+            <div className="flex-1 relative z-10 pr-1">
+              <p className="text-xs sm:text-sm font-black tracking-tight leading-tight">{toast.message}</p>
+            </div>
+            
             <button
               onClick={() => removeToast(toast.id)}
-              className="hover:opacity-70 transition-opacity"
+              className="relative z-10 w-7 h-7 rounded-lg flex items-center justify-center hover:bg-black/5 transition-all text-current/60 hover:text-current"
             >
-              <X className="w-4 h-4" />
+              <X className="w-3.5 h-3.5" />
             </button>
+            
+            {/* Bottom Progress Indicator (Visual only for now) */}
+            <div className="absolute bottom-0 left-0 h-1 bg-current/20 w-full">
+               <div className="h-full bg-current/40 animate-progress-shrink origin-left"></div>
+            </div>
           </div>
         ))}
       </div>

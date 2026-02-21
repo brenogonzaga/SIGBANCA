@@ -19,6 +19,12 @@ import {
   FileText,
   Users,
   CheckCircle,
+  TrendingUp,
+  PieChart,
+  Activity,
+  ArrowUpRight,
+  Clock,
+  Target
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -32,7 +38,7 @@ const roleLabels: Record<string, string> = {
   ADMIN: "Administrador",
 };
 
-const roleColors: Record<string, "default" | "success" | "warning" | "danger" | "info"> = {
+const roleColors: Record<string, "default" | "success" | "warning" | "danger" | "info" | "purple"> = {
   ALUNO: "default",
   PROFESSOR: "info",
   COORDENADOR: "success",
@@ -43,11 +49,7 @@ const roleColors: Record<string, "default" | "success" | "warning" | "danger" | 
 export default function PerfilPage() {
   const router = useRouter();
   const { usuario, token } = useAuth();
-  const [stats, setStats] = useState<{
-    trabalhos?: number;
-    bancas?: number;
-    orientacoes?: number;
-  }>({});
+  const [personalStats, setPersonalStats] = useState<any>(null);
   const [isLoadingStats, setIsLoadingStats] = useState(true);
 
   useEffect(() => {
@@ -55,33 +57,12 @@ export default function PerfilPage() {
       if (!token || !usuario) return;
 
       try {
-        if (usuario.role === "ALUNO") {
-          const response = await fetch(`/api/trabalhos?alunoId=${usuario.id}`, {
-            headers: { Authorization: `Bearer ${token}` },
-          });
-          if (response.ok) {
-            const data = await response.json();
-            setStats({ trabalhos: data.length });
-          }
-        } else if (usuario.role === "PROFESSOR" || usuario.role === "COORDENADOR") {
-          const [trabalhosRes, bancasRes] = await Promise.all([
-            fetch(`/api/trabalhos?orientadorId=${usuario.id}`, {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-            fetch("/api/bancas", {
-              headers: { Authorization: `Bearer ${token}` },
-            }),
-          ]);
-
-          const trabalhos = trabalhosRes.ok ? await trabalhosRes.json() : [];
-          const bancas = bancasRes.ok ? await bancasRes.json() : [];
-
-          setStats({
-            orientacoes: trabalhos.length,
-            bancas: bancas.filter((b: { membros: { usuarioId: string }[] }) =>
-              b.membros.some((m: { usuarioId: string }) => m.usuarioId === usuario.id)
-            ).length,
-          });
+        const response = await fetch("/api/usuarios/me/estatisticas", {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (response.ok) {
+          const data = await response.json();
+          setPersonalStats(data);
         }
       } catch (error) {
         console.error("Erro ao carregar estatísticas:", error);
@@ -99,353 +80,330 @@ export default function PerfilPage() {
 
   return (
     <ProtectedRoute>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      <div className="min-h-screen bg-[var(--background)]">
         <Navigation activeView="dashboard" onViewChange={(view) => router.push(`/${view}`)} />
 
-        <main className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-3xl font-bold text-gray-900 dark:text-gray-100">Meu Perfil</h1>
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+          <div className="flex flex-col md:flex-row md:items-center justify-between gap-6 mb-12">
+            <div className="flex items-center gap-6">
+               <div className="w-16 h-16 rounded-[24px] bg-[var(--surface-light)] border border-[var(--border-light)] flex items-center justify-center text-[var(--primary)] shadow-sm">
+                  <User className="w-8 h-8" />
+               </div>
+               <div>
+                 <h1 className="text-4xl font-black text-[var(--foreground)] tracking-tight font-[Plus\ Jakarta\ Sans]">Configurações de Identidade</h1>
+                 <p className="text-[var(--muted)] text-sm mt-1">Dados pessoais, institucionais e métricas de desempenho acadêmico.</p>
+               </div>
+            </div>
             <Button
               variant="outline"
               onClick={() => router.push(`/usuarios/${usuario.id}/editar`)}
+              className="rounded-2xl border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--border-light)] px-8 py-6 h-auto font-black uppercase text-[10px] tracking-widest shadow-lg shadow-black/5"
             >
-              <Edit className="w-4 h-4 mr-2" />
-              Editar Perfil
+              <Edit className="w-4 h-4 mr-3 text-[var(--primary)]" />
+              Atualizar Cadastro
             </Button>
           </div>
 
-          <div className="space-y-6">
-            {/* Informações Básicas */}
-            <Card>
-              <div className="p-6">
-                <div className="flex items-start justify-between mb-6">
-                  <div className="flex items-center gap-4">
-                    <div className="w-16 h-16 bg-blue-100 dark:bg-blue-900 rounded-full flex items-center justify-center">
-                      <User className="w-8 h-8 text-blue-600 dark:text-blue-400" />
-                    </div>
-                    <div>
-                      <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                        {usuario.nome}
-                      </h2>
-                      <Badge variant={roleColors[usuario.role]}>
-                        {roleLabels[usuario.role] || usuario.role}
-                      </Badge>
+          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
+            {/* Sidebar Coluna Esquerda */}
+            <div className="lg:col-span-1 space-y-6">
+              {/* Informações Básicas Card */}
+              <Card className="surface-card overflow-hidden border-[var(--border-light)]">
+                <div className="h-28 bg-gradient-to-br from-[var(--primary)] via-[#7C3AED] to-[#4F46E5] relative">
+                  <div className="absolute inset-0 bg-dot-pattern opacity-[0.1] mix-blend-overlay"></div>
+                  <div className="absolute -bottom-1 -left-1 -right-1 h-8 bg-gradient-to-t from-[var(--surface)] to-transparent"></div>
+                </div>
+                <div className="px-8 pb-10 text-center -mt-14 relative z-10">
+                  <div className="w-28 h-28 bg-[var(--surface)] rounded-[32px] border-8 border-[var(--surface)] shadow-2xl mx-auto flex items-center justify-center mb-6 overflow-hidden">
+                    <div className="w-full h-full bg-gradient-to-br from-[var(--primary-light)] to-[var(--primary)]/10 flex items-center justify-center">
+                      <span className="text-4xl font-black text-[var(--primary)]">{usuario.nome.charAt(0)}</span>
                     </div>
                   </div>
-                </div>
-
-                <div className="grid md:grid-cols-2 gap-4">
-                  <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                    <Mail size={20} />
-                    <div>
-                      <p className="text-xs text-gray-500 dark:text-gray-500">Email</p>
-                      <p className="font-medium text-gray-900 dark:text-gray-100">
-                        {usuario.email}
-                      </p>
-                    </div>
-                  </div>
-
-                  {usuario.telefone && (
-                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                      <Phone size={20} />
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-500">Telefone</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {usuario.telefone}
-                        </p>
+                  <h2 className="text-2xl font-black text-[var(--foreground)] tracking-tight mb-2">
+                    {usuario.nome}
+                  </h2>
+                  <Badge variant={roleColors[usuario.role] as any} className="uppercase tracking-[0.2em] text-[9px] font-black py-1.5 px-4 rounded-full border-none bg-opacity-10 backdrop-blur-sm">
+                    {roleLabels[usuario.role] || usuario.role}
+                  </Badge>
+                  
+                  <div className="mt-10 space-y-5 text-left">
+                    <div className="space-y-1">
+                      <p className="text-[9px] font-black text-[var(--muted-light)] uppercase tracking-widest ml-1">E-mail Institucional</p>
+                      <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-light)] border border-[var(--border-light)]">
+                        <Mail className="w-4 h-4 text-[var(--muted)]" />
+                        <p className="text-xs font-bold text-[var(--foreground)] truncate">{usuario.email}</p>
                       </div>
                     </div>
-                  )}
 
-                  {usuario.cpf && (
-                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                      <User size={20} />
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-500">CPF</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {usuario.cpf}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-
-                  {usuario.createdAt && (
-                    <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                      <Calendar size={20} />
-                      <div>
-                        <p className="text-xs text-gray-500 dark:text-gray-500">Membro desde</p>
-                        <p className="font-medium text-gray-900 dark:text-gray-100">
-                          {format(new Date(usuario.createdAt), "dd/MM/yyyy", {
-                            locale: ptBR,
-                          })}
-                        </p>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </div>
-            </Card>
-
-            {/* Informações Específicas do Aluno */}
-            {usuario.role === "ALUNO" && (
-              <Card>
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                    Dados Acadêmicos
-                  </h3>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {usuario.matricula && (
-                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                        <BookOpen size={20} />
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-500">Matrícula</p>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {usuario.matricula}
-                          </p>
+                    {usuario.telefone && (
+                      <div className="space-y-1">
+                        <p className="text-[9px] font-black text-[var(--muted-light)] uppercase tracking-widest ml-1">Contato</p>
+                        <div className="flex items-center gap-3 p-3 rounded-xl bg-[var(--surface-light)] border border-[var(--border-light)]">
+                          <Phone className="w-4 h-4 text-[var(--muted)]" />
+                          <p className="text-xs font-bold text-[var(--foreground)]">{usuario.telefone}</p>
                         </div>
                       </div>
                     )}
 
-                    {usuario.curso && (
-                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                        <Building size={20} />
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-500">Curso</p>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {usuario.curso}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {usuario.dataIngresso && (
-                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                        <Calendar size={20} />
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-500">
-                            Data de Ingresso
-                          </p>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {format(new Date(usuario.dataIngresso), "dd/MM/yyyy")}
-                          </p>
-                        </div>
-                      </div>
-                    )}
+                    <div className="pt-4 flex items-center justify-between text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest px-1">
+                      <span>Membro desde</span>
+                      <span className="text-[var(--foreground)]">
+                        {usuario.createdAt ? format(new Date(usuario.createdAt), "MMM yyyy", { locale: ptBR }) : "---"}
+                      </span>
+                    </div>
                   </div>
                 </div>
               </Card>
-            )}
 
-            {/* Informações Específicas do Professor */}
-            {(usuario.role === "PROFESSOR" ||
-              usuario.role === "COORDENADOR" ||
-              usuario.role === "PROFESSOR_BANCA") && (
-              <Card>
-                <div className="p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                    Dados Profissionais
-                  </h3>
-                  <div className="grid md:grid-cols-2 gap-4">
-                    {usuario.titulacao && (
-                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                        <Award size={20} />
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-500">Titulação</p>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {usuario.titulacao}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {usuario.departamento && (
-                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                        <Building size={20} />
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-500">
-                            Departamento
-                          </p>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {usuario.departamento}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {usuario.areaAtuacao && (
-                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                        <BookOpen size={20} />
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-500">
-                            Área de Atuação
-                          </p>
-                          <p className="font-medium text-gray-900 dark:text-gray-100">
-                            {usuario.areaAtuacao}
-                          </p>
-                        </div>
-                      </div>
-                    )}
-
-                    {usuario.lattes && (
-                      <div className="flex items-center gap-3 text-gray-600 dark:text-gray-400">
-                        <Award size={20} />
-                        <div>
-                          <p className="text-xs text-gray-500 dark:text-gray-500">Lattes</p>
-                          <a
-                            href={usuario.lattes}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                          >
-                            Ver currículo
-                          </a>
-                        </div>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </Card>
-            )}
-
-            {/* Estatísticas */}
-            <Card>
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                  Estatísticas
+              {/* Status Section */}
+              <Card className="surface-card p-8 border-[var(--border-light)] bg-gradient-to-br from-[var(--surface)] to-[var(--background)]">
+                <h3 className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-[0.3em] mb-8 flex items-center gap-2">
+                  <Activity className="w-4 h-4" /> Signos de Atividade
                 </h3>
-
+                
                 {isLoadingStats ? (
-                  <div className="flex items-center justify-center py-8">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <div className="space-y-4">
+                     {[1,2,3].map(i => <div key={i} className="h-12 bg-[var(--border-light)] rounded-xl animate-pulse"></div>)}
                   </div>
                 ) : (
-                  <div className="grid md:grid-cols-3 gap-4">
-                    {usuario.role === "ALUNO" && (
-                      <div className="flex items-center gap-3 p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                        <div className="p-2 bg-blue-100 dark:bg-blue-900 rounded-lg">
-                          <FileText className="w-6 h-6 text-blue-600 dark:text-blue-400" />
+                  <div className="space-y-4">
+                    {personalStats?.tipo === "ALUNO" && (
+                      <>
+                        <div className="p-5 rounded-[24px] bg-white dark:bg-white/5 border border-[var(--border-light)] shadow-sm">
+                          <p className="text-[9px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">Trabalhos Criados</p>
+                          <div className="flex items-end justify-between">
+                             <span className="text-3xl font-black text-[var(--foreground)]">{personalStats.stats.totalTrabalhos}</span>
+                             <FileText className="w-6 h-6 text-[var(--primary)] opacity-40 mb-1" />
+                          </div>
                         </div>
-                        <div>
-                          <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                            {stats.trabalhos || 0}
-                          </p>
-                          <p className="text-sm text-gray-600 dark:text-gray-400">
-                            {stats.trabalhos === 1 ? "Trabalho" : "Trabalhos"}
-                          </p>
+                        <div className="p-5 rounded-[24px] bg-white dark:bg-white/5 border border-[var(--border-light)] shadow-sm">
+                          <p className="text-[9px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">Bancas Realizadas</p>
+                          <div className="flex items-end justify-between">
+                             <span className="text-3xl font-black text-[var(--foreground)]">{personalStats.stats.totalBancas}</span>
+                             <Award className="w-6 h-6 text-amber-500 opacity-40 mb-1" />
+                          </div>
                         </div>
-                      </div>
+                      </>
                     )}
 
-                    {(usuario.role === "PROFESSOR" || usuario.role === "COORDENADOR") && (
+                    {personalStats?.tipo === "DOCENTE" && (
                       <>
-                        <div className="flex items-center gap-3 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                          <div className="p-2 bg-green-100 dark:bg-green-900 rounded-lg">
-                            <Users className="w-6 h-6 text-green-600 dark:text-green-400" />
-                          </div>
-                          <div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                              {stats.orientacoes || 0}
-                            </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {stats.orientacoes === 1 ? "Orientação" : "Orientações"}
-                            </p>
+                        <div className="p-5 rounded-[24px] bg-white dark:bg-white/5 border border-[var(--border-light)] shadow-sm">
+                          <p className="text-[9px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">Orientações Ativas</p>
+                          <div className="flex items-end justify-between">
+                             <span className="text-3xl font-black text-[var(--foreground)]">{personalStats.stats.trabalhos.total}</span>
+                             <TrendingUp className="w-6 h-6 text-emerald-500 opacity-40 mb-1" />
                           </div>
                         </div>
-
-                        <div className="flex items-center gap-3 p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                          <div className="p-2 bg-purple-100 dark:bg-purple-900 rounded-lg">
-                            <CheckCircle className="w-6 h-6 text-purple-600 dark:text-purple-400" />
-                          </div>
-                          <div>
-                            <p className="text-2xl font-bold text-gray-900 dark:text-gray-100">
-                              {stats.bancas || 0}
-                            </p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">
-                              {stats.bancas === 1 ? "Banca" : "Bancas"}
-                            </p>
+                        <div className="p-5 rounded-[24px] bg-white dark:bg-white/5 border border-[var(--border-light)] shadow-sm">
+                          <p className="text-[9px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">Total de Bancas</p>
+                          <div className="flex items-end justify-between">
+                             <span className="text-3xl font-black text-[var(--foreground)]">{personalStats.stats.totalBancasMembro}</span>
+                             <Users className="w-6 h-6 text-purple-500 opacity-40 mb-1" />
                           </div>
                         </div>
                       </>
                     )}
                   </div>
                 )}
-              </div>
-            </Card>
+              </Card>
+            </div>
 
-            {/* Ações Rápidas */}
-            <Card>
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">
-                  Ações Rápidas
-                </h3>
-                <div className="grid md:grid-cols-2 gap-4">
-                  {usuario.role === "ALUNO" && (
-                    <>
-                      <Button
-                        variant="outline"
-                        onClick={() => router.push("/trabalhos")}
-                        className="justify-start"
-                      >
-                        <FileText className="w-5 h-5 mr-2" />
-                        Meus Trabalhos
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => router.push("/trabalhos/cadastrar")}
-                        className="justify-start"
-                      >
-                        <FileText className="w-5 h-5 mr-2" />
-                        Novo Trabalho
-                      </Button>
-                    </>
-                  )}
+            {/* Coluna Direita - Detalhes e Performance */}
+            <div className="lg:col-span-3 space-y-8">
+              {/* Performance Dash / Student Progress */}
+              {personalStats?.tipo === "ALUNO" && personalStats.stats.trabalhoAtual && (
+                <Card className="surface-card p-10 bg-gradient-to-br from-[var(--primary)] to-[#4F46E5] text-white border-none overflow-hidden relative shadow-2xl">
+                   <div className="absolute top-0 right-0 w-64 h-64 bg-white/10 rounded-full blur-[80px] -mr-32 -mt-32"></div>
+                   <div className="absolute bottom-0 left-0 w-48 h-48 bg-black/10 rounded-full blur-[60px] -ml-24 -mb-24"></div>
+                   
+                   <div className="relative z-10 grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                      <div className="space-y-6">
+                        <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/20 backdrop-blur-md border border-white/20 text-[9px] font-black uppercase tracking-widest">
+                           <Target className="w-3 h-3" /> Status do Projeto Atual
+                        </div>
+                        <h3 className="text-3xl font-black leading-tight italic">"{personalStats.stats.trabalhoAtual.titulo}"</h3>
+                        <div className="flex flex-wrap gap-4">
+                           <div className="flex items-center gap-2">
+                              <div className="w-1.5 h-1.5 rounded-full bg-emerald-400"></div>
+                              <span className="text-xs font-bold text-white/80">{personalStats.stats.trabalhoAtual.status}</span>
+                           </div>
+                           <div className="flex items-center gap-2 border-l border-white/20 pl-4">
+                              <User className="w-3 h-3 text-white/60" />
+                              <span className="text-xs font-bold text-white/80">Orientado por {personalStats.stats.trabalhoAtual.orientador}</span>
+                           </div>
+                        </div>
+                      </div>
+                      
+                      <div className="flex flex-col items-center justify-center p-8 rounded-[40px] bg-white/10 backdrop-blur-xl border border-white/20 shadow-inner">
+                        <div className="relative w-40 h-40 flex items-center justify-center">
+                           <svg className="w-full h-full -rotate-90">
+                              <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="12" fill="transparent" className="text-white/10" />
+                              <circle cx="80" cy="80" r="70" stroke="currentColor" strokeWidth="12" fill="transparent" strokeDasharray={440} strokeDashoffset={440 - (440 * personalStats.stats.progressoRecente) / 100} className="text-white" strokeLinecap="round" />
+                           </svg>
+                           <div className="absolute inset-0 flex flex-col items-center justify-center">
+                              <span className="text-4xl font-black">{personalStats.stats.progressoRecente}%</span>
+                              <span className="text-[8px] font-black uppercase tracking-widest opacity-60">Concluído</span>
+                           </div>
+                        </div>
+                        <p className="text-[10px] font-black uppercase tracking-widest mt-6 opacity-80">Jornada de Formação</p>
+                      </div>
+                   </div>
+                </Card>
+              )}
 
-                  {(usuario.role === "PROFESSOR" ||
-                    usuario.role === "COORDENADOR" ||
-                    usuario.role === "PROFESSOR_BANCA") && (
-                    <>
-                      <Button
-                        variant="outline"
-                        onClick={() => router.push("/trabalhos")}
-                        className="justify-start"
-                      >
-                        <FileText className="w-5 h-5 mr-2" />
-                        Ver Trabalhos
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => router.push("/bancas")}
-                        className="justify-start"
-                      >
-                        <Users className="w-5 h-5 mr-2" />
-                        Ver Bancas
-                      </Button>
-                    </>
-                  )}
+              {personalStats?.tipo === "DOCENTE" && (
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                   <Card className="surface-card p-8 border-[var(--border-light)] flex flex-col justify-between">
+                      <div className="w-12 h-12 rounded-2xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-600 mb-6">
+                         <TrendingUp className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">Taxa de Aprovação</p>
+                        <h4 className="text-4xl font-black text-[var(--foreground)]">{personalStats.stats.performance.taxaAprovacao.toFixed(1)}%</h4>
+                        <div className="h-2 bg-[var(--surface-light)] rounded-full mt-4 overflow-hidden">
+                           <div className="h-full bg-emerald-500 rounded-full" style={{ width: `${personalStats.stats.performance.taxaAprovacao}%` }}></div>
+                        </div>
+                      </div>
+                   </Card>
 
-                  {(usuario.role === "COORDENADOR" || usuario.role === "ADMIN") && (
-                    <>
-                      <Button
-                        variant="outline"
-                        onClick={() => router.push("/usuarios")}
-                        className="justify-start"
-                      >
-                        <User className="w-5 h-5 mr-2" />
-                        Gerenciar Usuários
-                      </Button>
-                      <Button
-                        variant="outline"
-                        onClick={() => router.push("/bancas/cadastrar")}
-                        className="justify-start"
-                      >
-                        <Users className="w-5 h-5 mr-2" />
-                        Nova Banca
-                      </Button>
-                    </>
-                  )}
+                   <Card className="surface-card p-8 border-[var(--border-light)] flex flex-col justify-between">
+                      <div className="w-12 h-12 rounded-2xl bg-[var(--primary-light)] flex items-center justify-center text-[var(--primary)] mb-6">
+                         <Clock className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">Ritmo de Revisão</p>
+                        <h4 className="text-4xl font-black text-[var(--foreground)]">{personalStats.stats.performance.tempoMedioRevisao} dias</h4>
+                        <p className="text-[10px] text-[var(--muted)] mt-2 italic font-bold">Tempo médio de resposta</p>
+                      </div>
+                   </Card>
+
+                   <Card className="surface-card p-8 border-[var(--border-light)] flex flex-col justify-between">
+                      <div className="w-12 h-12 rounded-2xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center text-amber-600 mb-6">
+                         <PieChart className="w-6 h-6" />
+                      </div>
+                      <div>
+                        <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">Atividades Totais</p>
+                        <h4 className="text-4xl font-black text-[var(--foreground)]">{personalStats.stats.totalAtividades}</h4>
+                        <p className="text-[10px] text-[var(--muted)] mt-2 italic font-bold">Trabalhos + Bancas</p>
+                      </div>
+                   </Card>
                 </div>
+              )}
+
+              {/* Bento Grid - Informações Administrativas */}
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <Card className="surface-card p-10 border-[var(--border-light)]">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-lg font-black text-[var(--foreground)] tracking-tight">Atributos de Classe</h3>
+                    <Award className="w-5 h-5 text-[var(--primary)] opacity-40" />
+                  </div>
+                  
+                  <div className="space-y-8">
+                    {usuario.role === "ALUNO" ? (
+                      <>
+                        <div className="grid grid-cols-2 gap-6">
+                           <div className="space-y-1">
+                             <p className="text-[9px] font-black text-[var(--muted-light)] uppercase tracking-widest">Matrícula</p>
+                             <div className="p-4 rounded-2xl bg-[var(--background)] border border-[var(--border-light)] font-bold text-sm">
+                               {usuario.matricula || "---"}
+                             </div>
+                           </div>
+                           <div className="space-y-1">
+                             <p className="text-[9px] font-black text-[var(--muted-light)] uppercase tracking-widest">Departamento</p>
+                             <div className="p-4 rounded-2xl bg-[var(--background)] border border-[var(--border-light)] font-bold text-sm">
+                               Coord. Acadêmica
+                             </div>
+                           </div>
+                        </div>
+                        <div className="space-y-1">
+                           <p className="text-[9px] font-black text-[var(--muted-light)] uppercase tracking-widest">Curso Vinculado</p>
+                           <div className="p-4 rounded-2xl bg-[var(--background)] border border-[var(--border-light)] font-black text-sm text-[var(--primary)]">
+                             {usuario.curso || "---"}
+                           </div>
+                        </div>
+                      </>
+                    ) : (
+                      <>
+                        <div className="grid grid-cols-2 gap-6">
+                           <div className="space-y-1">
+                             <p className="text-[9px] font-black text-[var(--muted-light)] uppercase tracking-widest">Titulação</p>
+                             <div className="p-4 rounded-2xl bg-[var(--background)] border border-[var(--border-light)] font-bold text-sm">
+                               {usuario.titulacao || "---"}
+                             </div>
+                           </div>
+                           <div className="space-y-1">
+                             <p className="text-[9px] font-black text-[var(--muted-light)] uppercase tracking-widest">Departamento</p>
+                             <div className="p-4 rounded-2xl bg-[var(--background)] border border-[var(--border-light)] font-bold text-sm">
+                               {usuario.departamento || "---"}
+                             </div>
+                           </div>
+                        </div>
+                        <div className="space-y-1">
+                           <p className="text-[9px] font-black text-[var(--muted-light)] uppercase tracking-widest">Lattes ID / Currículo</p>
+                           <a 
+                             href={usuario.lattes || "#"} 
+                             target="_blank" 
+                             className="flex items-center justify-between p-4 rounded-2xl bg-[var(--primary)]/5 border border-[var(--primary)]/20 font-black text-xs text-[var(--primary)] hover:bg-[var(--primary)]/10 transition-colors"
+                           >
+                              ACESSAR PLATAFORMA LATTES
+                              <ArrowUpRight className="w-4 h-4" />
+                           </a>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                </Card>
+
+                <Card className="surface-card p-10 border-[var(--border-light)]">
+                  <div className="flex items-center justify-between mb-8">
+                    <h3 className="text-lg font-black text-[var(--foreground)] tracking-tight">Atalhos Operacionais</h3>
+                    <div className="p-1.5 rounded-lg bg-[var(--surface-light)] border border-[var(--border-light)]">
+                       <CheckCircle className="w-4 h-4 text-emerald-500" />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 gap-4">
+                    <button 
+                      onClick={() => router.push(usuario.role === "ALUNO" ? "/trabalhos" : "/bancas")}
+                      className="p-5 rounded-[24px] bg-[var(--foreground)] text-white hover:scale-[1.02] active:scale-95 transition-all text-left group overflow-hidden relative shadow-xl shadow-black/10"
+                    >
+                       <div className="absolute top-0 right-0 p-4 opacity-10 group-hover:scale-125 transition-transform">
+                          <BookOpen className="w-16 h-16" />
+                       </div>
+                       <p className="text-[9px] font-black uppercase tracking-widest opacity-60 mb-1">Fluxo Direto</p>
+                       <p className="font-black text-sm uppercase tracking-tight">Visualizar {usuario.role === "ALUNO" ? "Cronograma" : "Minhas Bancas"}</p>
+                    </button>
+
+                    <button 
+                      onClick={() => router.push("/notificacoes")}
+                      className="p-5 rounded-[24px] bg-[var(--surface-light)] border border-[var(--border-light)] hover:border-[var(--primary)] hover:shadow-lg transition-all text-left flex items-center justify-between group"
+                    >
+                       <div>
+                         <p className="text-[9px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">Central de Mensagens</p>
+                         <p className="font-black text-sm text-[var(--foreground)] uppercase tracking-tight">Todas Notificações</p>
+                       </div>
+                       <div className="w-10 h-10 rounded-xl bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center group-hover:text-[var(--primary)] transition-colors">
+                          <Activity className="w-4 h-4" />
+                       </div>
+                    </button>
+                    
+                    <button 
+                      onClick={() => router.push("/feedback")}
+                      className="p-5 rounded-[24px] bg-[var(--surface-light)] border border-[var(--border-light)] hover:border-[var(--primary)] hover:shadow-lg transition-all text-left flex items-center justify-between group"
+                    >
+                       <div>
+                         <p className="text-[9px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">Suporte Técnico</p>
+                         <p className="font-black text-sm text-[var(--foreground)] uppercase tracking-tight">Reportar Incidente</p>
+                       </div>
+                       <div className="w-10 h-10 rounded-xl bg-[var(--surface)] border border-[var(--border)] flex items-center justify-center group-hover:text-[var(--primary)] transition-colors">
+                          <ArrowUpRight className="w-4 h-4" />
+                       </div>
+                    </button>
+                  </div>
+                </Card>
               </div>
-            </Card>
+            </div>
           </div>
         </main>
       </div>
