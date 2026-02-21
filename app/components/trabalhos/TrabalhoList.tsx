@@ -1,7 +1,8 @@
 "use client";
 
 import React, { useState, useEffect } from "react";
-import { Trabalho, TrabalhoStatus } from "@/app/types";
+import { TrabalhoStatus } from "@/app/types";
+import { TrabalhoListItem } from "@/app/types/custom";
 import { Card, CardContent } from "../ui/Card";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -14,14 +15,13 @@ import { ConfirmModal } from "../ui/Modal";
 import Link from "next/link";
 
 interface TrabalhoListProps {
-  onSelectTrabalho?: (trabalho: Trabalho) => void;
+  onSelectTrabalho?: (trabalho: TrabalhoListItem) => void;
 }
 
 export function TrabalhoList({ onSelectTrabalho }: TrabalhoListProps) {
   const { token, usuario } = useAuth();
   const { showToast } = useToast();
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const [trabalhos, setTrabalhos] = useState<any[]>([]);
+  const [trabalhos, setTrabalhos] = useState<TrabalhoListItem[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filtroStatus, setFiltroStatus] = useState<string>("todos");
   const [deletingId, setDeletingId] = useState<string | null>(null);
@@ -33,17 +33,16 @@ export function TrabalhoList({ onSelectTrabalho }: TrabalhoListProps) {
   const canCreate =
     usuario?.role === "ALUNO" || usuario?.role === "COORDENADOR" || usuario?.role === "ADMIN";
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const canEdit = (trabalho: any) => {
+  const canEdit = (trabalho: TrabalhoListItem) => {
     if (usuario?.role === "ADMIN" || usuario?.role === "COORDENADOR") return true;
-    return trabalho.alunoId === usuario?.id || trabalho.orientadorId === usuario?.id;
+    return trabalho.aluno.id === usuario?.id || trabalho.orientador.id === usuario?.id;
   };
 
-  // eslint-disable-next-line @typescript-eslint/no-explicit-any, @typescript-eslint/no-unused-vars
-  const canDelete = (_trabalho: any) => {
+  const canDelete = (_trabalho: TrabalhoListItem) => {
     if (usuario?.role === "ADMIN" || usuario?.role === "COORDENADOR") return true;
     return false;
   };
+
 
   const handleDelete = async () => {
     if (!trabalhoToDelete) return;

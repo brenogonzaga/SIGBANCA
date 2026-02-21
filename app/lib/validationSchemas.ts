@@ -26,7 +26,7 @@ export const createUsuarioSchema = z.object({
   titulacao: z.string().optional(),
   departamento: z.string().optional(),
   areaAtuacao: z.string().optional(),
-  lattes: z.string().url("URL do Lattes inválida").optional(),
+  lattes: z.url("URL do Lattes inválida").optional(),
 });
 
 export const updateUsuarioSchema = z.object({
@@ -47,11 +47,11 @@ export const updateUsuarioSchema = z.object({
   titulacao: z.string().optional(),
   departamento: z.string().optional(),
   areaAtuacao: z.string().optional(),
-  lattes: z.string().url("URL do Lattes inválida").optional(),
+  lattes: z.url("URL do Lattes inválida").optional(),
 });
 
 export const loginSchema = z.object({
-  email: z.string().email("Email inválido"),
+  email: z.email("Email inválido"),
   senha: z.string().min(1, "Senha é obrigatória"),
 });
 
@@ -65,8 +65,8 @@ export const createTrabalhoSchema = z.object({
     .array(z.string())
     .min(1, "Pelo menos uma palavra-chave é obrigatória")
     .optional(),
-  alunoId: z.string().cuid("ID de aluno inválido"),
-  orientadorId: z.string().cuid("ID de orientador inválido"),
+  alunoId: z.cuid("ID de aluno inválido"),
+  orientadorId: z.cuid("ID de orientador inválido"),
   dataInicio: z.string().or(z.date()).optional(),
 });
 
@@ -75,12 +75,12 @@ export const updateTrabalhoSchema = z.object({
   descricao: z.string().min(20, "Descrição deve ter no mínimo 20 caracteres").optional(),
   curso: z.string().min(1, "Curso é obrigatório").optional(),
   palavrasChave: z.array(z.string()).optional(),
-  status: z.nativeEnum(TrabalhoStatus).optional(),
-  orientadorId: z.string().cuid("ID de orientador inválido").optional(),
+  status: z.enum(TrabalhoStatus).optional(),
+  orientadorId: z.cuid("ID de orientador inválido").optional(),
 });
 
 export const transitionStatusSchema = z.object({
-  novoStatus: z.nativeEnum(TrabalhoStatus),
+  novoStatus: z.enum(TrabalhoStatus),
   observacao: z.string().max(500, "Observação muito longa").optional(),
 });
 
@@ -99,7 +99,7 @@ export const plataformasExternas = [
 
 // Schema para upload de arquivo
 export const createVersaoArquivoSchema = z.object({
-  trabalhoId: z.string().cuid("ID de trabalho inválido"),
+  trabalhoId: z.cuid("ID de trabalho inválido"),
   tipoDocumento: z.literal("ARQUIVO"),
   changelog: z.string().max(1000, "Changelog muito longo").optional(),
 });
@@ -125,7 +125,7 @@ export const createVersaoSchema = z.discriminatedUnion("tipoDocumento", [
 
 // Schema legado para compatibilidade
 export const createVersaoLegacySchema = z.object({
-  trabalhoId: z.string().cuid("ID de trabalho inválido"),
+  trabalhoId: z.cuid("ID de trabalho inválido"),
   changelog: z.string().max(1000, "Changelog muito longo").optional(),
 });
 
@@ -133,8 +133,8 @@ export const createVersaoLegacySchema = z.object({
 
 export const createComentarioSchema = z.object({
   texto: z.string().min(1, "Comentário não pode ser vazio").max(5000, "Comentário muito longo"),
-  versaoId: z.cuid("ID de versão inválido"),
-  parentId: z.cuid("ID de comentário pai inválido").optional(),
+  versaoId: z.string().cuid("ID de versão inválido"),
+  parentId: z.string().cuid("ID de comentário pai inválido").optional(),
 });
 
 export const updateComentarioSchema = z.object({
@@ -144,12 +144,12 @@ export const updateComentarioSchema = z.object({
 // ============ BANCAS ============
 
 export const createBancaSchema = z.object({
-  trabalhoId: z.string().cuid("ID de trabalho inválido"),
+  trabalhoId: z.cuid("ID de trabalho inválido"),
   data: z.string().or(z.date()),
   horario: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Horário inválido (HH:MM)"),
   local: z.string().min(3, "Local deve ter no mínimo 3 caracteres"),
   modalidade: z.enum(["PRESENCIAL", "REMOTO", "HIBRIDO"]),
-  linkReuniao: z.string().url("URL inválida").optional(),
+  linkReuniao: z.url("URL inválida").optional(),
   observacoes: z.string().max(1000, "Observações muito longas").optional(),
   membros: z
     .array(
@@ -169,7 +169,7 @@ export const updateBancaSchema = z.object({
     .optional(),
   local: z.string().min(3, "Local deve ter no mínimo 3 caracteres").optional(),
   modalidade: z.enum(["PRESENCIAL", "REMOTO", "HIBRIDO"]).optional(),
-  linkReuniao: z.string().url("URL inválida").optional(),
+  linkReuniao: z.url("URL inválida").optional(),
   status: z.enum(BancaStatus).optional(),
   notaFinal: z.number().min(0).max(10).optional(),
   resultado: z.enum(["APROVADO", "APROVADO_COM_RESSALVAS", "REPROVADO"]).optional(),
@@ -211,14 +211,14 @@ export const paginationSchema = z.object({
 export const trabalhoFilterSchema = z.object({
   status: z.enum(TrabalhoStatus).optional(),
   alunoId: z.cuid().optional(),
-  orientadorId: z.cuid().optional(),
+  orientadorId: z.string().cuid().optional(),
   curso: z.string().optional(),
   search: z.string().optional(),
   ...paginationSchema.shape,
 });
 
 export const bancaFilterSchema = z.object({
-  status: z.nativeEnum(BancaStatus).optional(),
+  status: z.enum(BancaStatus).optional(),
   dataInicio: z.string().or(z.date()).optional(),
   dataFim: z.string().or(z.date()).optional(),
   ...paginationSchema.shape,
@@ -233,7 +233,7 @@ export const futureDate = z
   .string()
   .or(z.date())
   .refine(
-    (date) => {
+    (date: string | Date) => {
       const d = typeof date === "string" ? new Date(date) : date;
       return d > new Date();
     },
@@ -288,5 +288,5 @@ export function validarCPF(cpf: string): boolean {
  */
 export const cpfSchema = z
   .string()
-  .transform((val) => val.replace(/\D/g, ""))
-  .refine((val) => validarCPF(val), { message: "CPF inválido" });
+  .transform((val: string) => val.replace(/\D/g, ""))
+  .refine((val: string) => validarCPF(val), { message: "CPF inválido" });

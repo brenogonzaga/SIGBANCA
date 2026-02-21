@@ -19,6 +19,8 @@ interface Banca {
   local: string;
   modalidade: string;
   status: string;
+  notaFinal?: number | null;
+  resultado?: "APROVADO" | "APROVADO_COM_RESSALVAS" | "REPROVADO" | null;
   trabalho: {
     id: string;
     titulo: string;
@@ -251,6 +253,37 @@ export function BancaList() {
                     <strong>Curso:</strong> {banca.trabalho.aluno.curso}
                   </div>
                 </div>
+
+                {/* Resultado da Banca */}
+                {banca.status === "REALIZADA" && (banca.resultado || banca.notaFinal != null) && (
+                  <div className="mt-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700">
+                    <p className="text-sm font-semibold text-gray-700 dark:text-gray-300 mb-2">Resultado</p>
+                    <div className="flex flex-wrap items-center gap-3">
+                      {banca.resultado && (
+                        <Badge
+                          variant={
+                            banca.resultado === "APROVADO"
+                              ? "success"
+                              : banca.resultado === "REPROVADO"
+                              ? "danger"
+                              : "warning"
+                          }
+                        >
+                          {banca.resultado === "APROVADO"
+                            ? "Aprovado"
+                            : banca.resultado === "REPROVADO"
+                            ? "Reprovado"
+                            : "Aprovado com Ressalvas"}
+                        </Badge>
+                      )}
+                      {banca.notaFinal != null && (
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                          Nota: <strong>{banca.notaFinal.toFixed(1)}</strong>
+                        </span>
+                      )}
+                    </div>
+                  </div>
+                )}
 
                 <div>
                   <div className="flex items-center gap-2 mb-2">

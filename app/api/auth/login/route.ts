@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import prisma from "@/app/lib/prisma";
+import { prisma } from "@/app/lib/prisma";
 import { verifyPassword, generateToken } from "@/app/lib/auth";
 import { authRateLimit } from "@/app/lib/rateLimit";
 import { getRequestMetadata } from "@/app/lib/requestMetadata";

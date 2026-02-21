@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import prisma from "@/app/lib/prisma";
+import { prisma } from "@/app/lib/prisma";
 import { hashPassword } from "@/app/lib/auth";
 import { UserRole } from "@prisma/client";
 import { VALIDATION_CONFIG } from "@/app/config";

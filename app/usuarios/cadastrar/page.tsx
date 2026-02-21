@@ -1,15 +1,10 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { useAuth } from "@/app/contexts/AuthContext";
+import { useToast } from "@/app/components/ui/Toast";
 import { UserPlus, ArrowLeft, Save } from "lucide-react";
-import jwt from "jsonwebtoken";
-
-interface JWTPayload {
-  id: string;
-  email: string;
-  role: string;
-}
 
 const roleLabels: Record<string, string> = {
   ADMIN: "Administrador",
@@ -21,7 +16,8 @@ const roleLabels: Record<string, string> = {
 
 export default function CadastrarUsuarioPage() {
   const router = useRouter();
-  const [userRole, setUserRole] = useState<string>("");
+  const { token, usuario: currentUser } = useAuth();
+  const { showToast } = useToast();
   const [loading, setLoading] = useState(false);
 
   const [formData, setFormData] = useState({
@@ -40,21 +36,24 @@ export default function CadastrarUsuarioPage() {
     lattes: "",
   });
 
-  useEffect(() => {
-    const token = localStorage.getItem("token");
-    if (token) {
-      const decoded = jwt.decode(token) as JWTPayload;
-      setUserRole(decoded.role);
+  const getAvailableRoles = () => {
+    if (currentUser?.role === "ADMIN") {
+      return ["ADMIN", "COORDENADOR", "PROFESSOR", "PROFESSOR_BANCA", "ALUNO"];
+    } else if (currentUser?.role === "COORDENADOR") {
+      return ["PROFESSOR", "PROFESSOR_BANCA", "ALUNO"];
+    } else if (currentUser?.role === "PROFESSOR") {
+      return ["ALUNO"];
     }
-  }, []);
+    return [];
+  };
+
+  const availableRoles = getAvailableRoles();
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
-      const token = localStorage.getItem("token");
-
       const payload: Record<string, unknown> = {
         email: formData.email,
         senha: formData.senha,
@@ -93,32 +92,19 @@ export default function CadastrarUsuarioPage() {
       });
 
       if (response.ok) {
-        alert("Usuário cadastrado com sucesso!");
-        router.push("/usuarios");
+        showToast("Usuário cadastrado com sucesso!", "success");
+        setTimeout(() => router.push("/usuarios"), 1000);
       } else {
         const error = await response.json();
-        alert(`Erro: ${error.error}`);
+        showToast(error.error || "Erro ao cadastrar usuário", "error");
       }
     } catch (error) {
       console.error("Erro ao cadastrar usuário:", error);
-      alert("Erro ao cadastrar usuário");
+      showToast("Erro de conexão ao cadastrar usuário", "error");
     } finally {
       setLoading(false);
     }
   };
-
-  const getAvailableRoles = () => {
-    if (userRole === "ADMIN") {
-      return ["ADMIN", "COORDENADOR", "PROFESSOR", "PROFESSOR_BANCA", "ALUNO"];
-    } else if (userRole === "COORDENADOR") {
-      return ["PROFESSOR", "PROFESSOR_BANCA", "ALUNO"];
-    } else if (userRole === "PROFESSOR") {
-      return ["ALUNO"];
-    }
-    return [];
-  };
-
-  const availableRoles = getAvailableRoles();
 
   const isAluno = formData.role === "ALUNO";
   const isProfessor =

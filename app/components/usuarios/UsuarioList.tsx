@@ -5,10 +5,11 @@ import { useRouter } from "next/navigation";
 import { Card } from "../ui/Card";
 import { Badge } from "../ui/Badge";
 import { ConfirmModal } from "../ui/Modal";
-import { UserRole } from "@prisma/client";
+import { UserRole } from "@/app/types/custom";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "../ui/Toast";
-import { User, Mail, BookOpen, GraduationCap, Edit, Trash2 } from "lucide-react";
+import { User, Mail, BookOpen, GraduationCap, Edit, Trash2, UserPlus } from "lucide-react";
+import Link from "next/link";
 
 interface Usuario {
   id: string;
@@ -137,6 +138,14 @@ export function UsuarioList() {
     <div className="space-y-4">
       <div className="flex justify-between items-center">
         <h2 className="text-2xl font-bold text-gray-900 dark:text-gray-100">Usuários</h2>
+        {(usuario?.role === "ADMIN" || usuario?.role === "COORDENADOR") && (
+          <Link href="/usuarios/cadastrar">
+            <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium">
+              <UserPlus className="w-4 h-4" />
+              Novo Usuário
+            </button>
+          </Link>
+        )}
       </div>
 
       {/* Filtros */}

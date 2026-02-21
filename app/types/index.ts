@@ -1,4 +1,4 @@
-export type UserRole = "ALUNO" | "PROFESSOR" | "COORDENADOR" | "ADMIN";
+export type UserRole = "ALUNO" | "PROFESSOR" | "COORDENADOR" | "PROFESSOR_BANCA" | "ADMIN";
 
 export type TrabalhoStatus =
   | "EM_ELABORACAO"
@@ -74,9 +74,14 @@ export interface Banca {
   data: Date;
   horario: string;
   local: string;
+  modalidade: "PRESENCIAL" | "REMOTO" | "HIBRIDO";
+  linkReuniao?: string;
   membros: MembroBanca[];
   status: "AGENDADA" | "EM_ANDAMENTO" | "REALIZADA" | "CANCELADA";
+  notaFinal?: number;
+  resultado?: "APROVADO" | "APROVADO_COM_RESSALVAS" | "REPROVADO";
   ataUrl?: string;
+  observacoes?: string;
 }
 
 export interface MembroBanca {
@@ -109,7 +114,8 @@ export interface Comentario {
   autor: Usuario;
   texto: string;
   dataComentario: Date;
-  respondidoPor?: Comentario[];
+  parentId?: string | null;
+  respostas?: Comentario[];
 }
 
 export interface DashboardStats {

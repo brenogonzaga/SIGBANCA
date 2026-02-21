@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import prisma from "@/app/lib/prisma";
+import { prisma } from "@/app/lib/prisma";
 import { withAuthContext } from "@/app/lib/authMiddleware";
 import bcrypt from "bcryptjs";
 import { z } from "zod";

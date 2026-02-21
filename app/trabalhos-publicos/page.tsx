@@ -283,7 +283,7 @@ export default function TrabalhosPublicosPage() {
                       <Button
                         variant="secondary"
                         size="sm"
-                        onClick={() => router.push(`/trabalhos/${trabalho.id}`)}
+                        onClick={() => router.push(`/trabalhos-publicos/${trabalho.id}`)}
                       >
                         Ver Detalhes
                       </Button>

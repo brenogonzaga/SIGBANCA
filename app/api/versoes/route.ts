@@ -9,6 +9,56 @@ import { createVersaoUrlSchema } from "@/app/lib/validationSchemas";
 import { TipoDocumento } from "@prisma/client";
 
 /**
+ * GET /api/versoes?trabalhoId=<id>
+ * Lista todas as versões de documento de um trabalho.
+ * Requer autenticação. O usuário deve ter acesso ao trabalho.
+ */
+export const GET = withAuth(async (request: NextRequest, user) => {
+  try {
+    const { searchParams } = new URL(request.url);
+    const trabalhoId = searchParams.get("trabalhoId");
+
+    if (!trabalhoId) {
+      return NextResponse.json({ error: "trabalhoId é obrigatório" }, { status: 400 });
+    }
+
+    const trabalho = await prisma.trabalho.findUnique({
+      where: { id: trabalhoId },
+    });
+
+    if (!trabalho) {
+      return NextResponse.json({ error: "Trabalho não encontrado" }, { status: 404 });
+    }
+
+    const isAdmin = user.role === "ADMIN" || user.role === "COORDENADOR";
+    const isOwner =
+      trabalho.alunoId === user.userId || trabalho.orientadorId === user.userId;
+
+    if (!isAdmin && !isOwner) {
+      return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
+    }
+
+    const versoes = await prisma.versaoDocumento.findMany({
+      where: { trabalhoId },
+      include: {
+        uploadPor: {
+          select: { id: true, nome: true, email: true },
+        },
+        comentarios: {
+          select: { id: true },
+        },
+      },
+      orderBy: { numeroVersao: "desc" },
+    });
+
+    return NextResponse.json(versoes);
+  } catch (error) {
+    console.error("Erro ao buscar versões:", error);
+    return NextResponse.json({ error: "Erro ao buscar versões" }, { status: 500 });
+  }
+});
+
+/**
  * POST /api/versoes
  * Cria uma nova versão de documento.
  * Aceita dois tipos de entrada:

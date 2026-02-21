@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import prisma from "@/app/lib/prisma";
+import { prisma } from "@/app/lib/prisma";
 import { withAuth } from "@/app/lib/authMiddleware";
 
 export const GET = withAuth(async (request, user) => {

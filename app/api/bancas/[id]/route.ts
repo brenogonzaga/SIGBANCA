@@ -1,27 +1,8 @@
 import { NextResponse } from "next/server";
-import prisma from "@/app/lib/prisma";
+import { prisma } from "@/app/lib/prisma";
 import { withAuthContext } from "@/app/lib/authMiddleware";
+import { updateBancaSchema } from "@/app/lib/validationSchemas";
 import { z } from "zod";
-
-const updateBancaSchema = z.object({
-  data: z.string().optional(),
-  horario: z.string().optional(),
-  local: z.string().optional(),
-  modalidade: z.enum(["PRESENCIAL", "REMOTO", "HIBRIDO"]).optional(),
-  linkReuniao: z.string().optional(),
-  status: z.enum(["AGENDADA", "EM_ANDAMENTO", "REALIZADA", "CANCELADA"]).optional(),
-  notaFinal: z.number().min(0).max(10).optional(),
-  resultado: z.string().optional(),
-  observacoes: z.string().optional(),
-  membros: z
-    .array(
-      z.object({
-        usuarioId: z.string(),
-        papel: z.enum(["ORIENTADOR", "AVALIADOR", "SUPLENTE"]),
-      })
-    )
-    .optional(),
-});
 
 export const GET = withAuthContext<{ params: Promise<{ id: string }> }>(
   async (request, user, { params }) => {

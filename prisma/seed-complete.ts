@@ -1,4 +1,5 @@
-import prisma from "../app/lib/prisma";
+import "dotenv/config";
+import { prisma } from "../app/lib/prisma";
 import { hashPassword } from "../app/lib/auth";
 
 async function main() {

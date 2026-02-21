@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/app/lib/prisma";
+import { prisma } from "@/app/lib/prisma";
 import { withAuth } from "@/app/lib/authMiddleware";
 import { Prisma, TrabalhoStatus } from "@prisma/client";
 import { createTrabalhoSchema } from "@/app/lib/validationSchemas";

@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
-import { Trabalho, PlataformaExterna, TipoDocumento } from "@/app/types";
+import { Trabalho, PlataformaExterna, TipoDocumento, Comentario } from "@/app/types";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 import { Badge } from "../ui/Badge";
 import { Button } from "../ui/Button";
@@ -21,9 +21,13 @@ import {
   X,
   Link as LinkIcon,
   ExternalLink,
+  Edit,
+  Trash2,
+  Check,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
+import { useEffect } from "react";
 
 // Opções de plataformas externas
 const PLATAFORMAS_OPTIONS: { value: PlataformaExterna; label: string }[] = [
@@ -50,6 +54,68 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
   );
   const [novoComentario, setNovoComentario] = useState<{ [key: string]: string }>({});
   const [isAddingComment, setIsAddingComment] = useState<{ [key: string]: boolean }>({});
+  // Estado de edição de comentários
+  const [comentarioEditando, setComentarioEditando] = useState<{ id: string; texto: string } | null>(null);
+  const [isSavingEdit, setIsSavingEdit] = useState(false);
+  const [deletingComentarioId, setDeletingComentarioId] = useState<string | null>(null);
+  // Estado de avaliação
+  const [minhaAvaliacao, setMinhaAvaliacao] = useState<{ nota: string; parecer: string }>({
+    nota: "",
+    parecer: "",
+  });
+  const [avaliacoes, setAvalocoes] = useState<Array<{
+    id: string;
+    membro: { id: string; nome: string; titulacao?: string; papel: string };
+    nota: number;
+    parecer: string;
+    dataAvaliacao: string;
+  }>>([]);
+  const [isSubmittingAvaliacao, setIsSubmittingAvaliacao] = useState(false);
+  const [jaAvaliou, setJaAvaliou] = useState(false);
+
+  const meuMembroId = trabalho.banca?.membros.find(
+    (m) => m.usuario.id === usuario?.id
+  )?.id;
+  const isMembro = !!meuMembroId;
+  const bancaAtiva =
+    trabalho.banca?.status === "AGENDADA" || trabalho.banca?.status === "EM_ANDAMENTO";
+  const bancaRealizada = trabalho.banca?.status === "REALIZADA";
+  const podeVerAvaliacoes =
+    bancaRealizada &&
+    (usuario?.role === "ADMIN" ||
+      usuario?.role === "COORDENADOR" ||
+      trabalho.aluno?.id === usuario?.id ||
+      trabalho.orientador?.id === usuario?.id ||
+      isMembro);
+
+  useEffect(() => {
+    if (!trabalho.banca || !podeVerAvaliacoes) return;
+    fetch(`/api/avaliacoes?bancaId=${trabalho.banca.id}`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.ok ? r.json() : null)
+      .then((data) => {
+        if (!data) return;
+        setAvalocoes(data.avaliacoes || []);
+        if (isMembro) {
+          const jaFez = data.avaliacoes?.some(
+            (a: { membro: { id: string } }) => a.membro.id === usuario?.id
+          );
+          setJaAvaliou(!!jaFez);
+
+          // Preencher campos com avaliação existente se membro já avaliou
+          const minhaAv = data.avaliacoes?.find(
+            (a: { membro: { id: string }; nota: number; parecer: string }) => a.membro.id === usuario?.id
+          );
+          if (minhaAv) {
+            setMinhaAvaliacao({ nota: String(minhaAv.nota), parecer: minhaAv.parecer });
+          }
+        }
+      })
+      .catch(console.error);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [trabalho.banca?.id, podeVerAvaliacoes]);
+
   const [showUploadModal, setShowUploadModal] = useState(false);
   // Tipo de upload: arquivo ou URL
   const [tipoUpload, setTipoUpload] = useState<TipoDocumento>("ARQUIVO");
@@ -191,6 +257,54 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
       showToast(errorMessage, "error");
     } finally {
       setIsAddingComment({ ...isAddingComment, [versaoId]: false });
+    }
+  };
+
+  const handleEditarComentario = async () => {
+    if (!comentarioEditando || !comentarioEditando.texto.trim()) return;
+    setIsSavingEdit(true);
+    try {
+      const response = await fetch(`/api/comentarios?id=${comentarioEditando.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ texto: comentarioEditando.texto }),
+      });
+      if (response.ok) {
+        showToast("Comentário atualizado!", "success");
+        setComentarioEditando(null);
+        if (onUpdate) onUpdate();
+      } else {
+        const error = await response.json();
+        showToast(error.error || "Erro ao editar comentário", "error");
+      }
+    } catch {
+      showToast("Erro de conexão ao editar comentário", "error");
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDeletarComentario = async (comentarioId: string) => {
+    setDeletingComentarioId(comentarioId);
+    try {
+      const response = await fetch(`/api/comentarios?id=${comentarioId}`, {
+        method: "DELETE",
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (response.ok) {
+        showToast("Comentário excluído!", "success");
+        if (onUpdate) onUpdate();
+      } else {
+        const error = await response.json();
+        showToast(error.error || "Erro ao excluir comentário", "error");
+      }
+    } catch {
+      showToast("Erro de conexão ao excluir comentário", "error");
+    } finally {
+      setDeletingComentarioId(null);
     }
   };
 
@@ -529,7 +643,7 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                             Comentários ({versao.comentarios.length})
                           </h5>
                           <div className="space-y-3">
-                            {versao.comentarios.map((comentario) => (
+                            {versao.comentarios.map((comentario: Comentario) => (
                               <div
                                 key={comentario.id}
                                 className="bg-white dark:bg-gray-800 p-3 rounded-lg border border-gray-200 dark:border-gray-700"
@@ -538,19 +652,83 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                                   <span className="font-medium text-sm text-gray-900 dark:text-gray-100">
                                     {comentario.autor.nome}
                                   </span>
-                                  <span className="text-xs text-gray-500 dark:text-gray-400">
-                                    {format(
-                                      new Date(comentario.dataComentario),
-                                      "dd/MM/yyyy HH:mm",
-                                      {
-                                        locale: ptBR,
-                                      }
+                                  <div className="flex items-center gap-2">
+                                    <span className="text-xs text-gray-500 dark:text-gray-400">
+                                      {format(
+                                        new Date(comentario.dataComentario),
+                                        "dd/MM/yyyy HH:mm",
+                                        { locale: ptBR }
+                                      )}
+                                    </span>
+                                    {/* Botões edit/delete: visivel para o autor ou admin/coordenador */}
+                                    {(comentario.autor.id === usuario?.id ||
+                                      usuario?.role === "ADMIN" ||
+                                      usuario?.role === "COORDENADOR") && (
+                                      <div className="flex gap-1">
+                                        {comentario.autor.id === usuario?.id && (
+                                          <button
+                                            onClick={() =>
+                                              setComentarioEditando({
+                                                id: comentario.id,
+                                                texto: comentario.texto,
+                                              })
+                                            }
+                                            className="p-1 text-gray-400 hover:text-blue-500 transition-colors"
+                                            title="Editar comentário"
+                                          >
+                                            <Edit className="w-3.5 h-3.5" />
+                                          </button>
+                                        )}
+                                        <button
+                                          onClick={() => handleDeletarComentario(comentario.id)}
+                                          disabled={deletingComentarioId === comentario.id}
+                                          className="p-1 text-gray-400 hover:text-red-500 transition-colors disabled:opacity-50"
+                                          title="Excluir comentário"
+                                        >
+                                          <Trash2 className="w-3.5 h-3.5" />
+                                        </button>
+                                      </div>
                                     )}
-                                  </span>
+                                  </div>
                                 </div>
-                                <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  {comentario.texto}
-                                </p>
+                                {/* Editar inline */}
+                                {comentarioEditando?.id === comentario.id ? (
+                                  <div className="space-y-2">
+                                    <textarea
+                                      value={comentarioEditando.texto}
+                                      onChange={(e) =>
+                                        setComentarioEditando({
+                                          ...comentarioEditando,
+                                          texto: e.target.value,
+                                        })
+                                      }
+                                      className="w-full px-3 py-2 border border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-gray-100 text-sm"
+                                      rows={3}
+                                    />
+                                    <div className="flex gap-2">
+                                      <Button
+                                        size="sm"
+                                        onClick={handleEditarComentario}
+                                        disabled={isSavingEdit}
+                                      >
+                                        <Check className="w-3.5 h-3.5 mr-1" />
+                                        {isSavingEdit ? "Salvando..." : "Salvar"}
+                                      </Button>
+                                      <Button
+                                        size="sm"
+                                        variant="secondary"
+                                        onClick={() => setComentarioEditando(null)}
+                                        disabled={isSavingEdit}
+                                      >
+                                        Cancelar
+                                      </Button>
+                                    </div>
+                                  </div>
+                                ) : (
+                                  <p className="text-sm text-gray-600 dark:text-gray-400">
+                                    {comentario.texto}
+                                  </p>
+                                )}
                               </div>
                             ))}
                           </div>
@@ -639,6 +817,156 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                 ))}
               </div>
             </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Avaliação da Banca */}
+      {trabalho.banca && (isMembro || podeVerAvaliacoes) && (
+        <Card>
+          <CardHeader>
+            <CardTitle>Avaliação da Banca</CardTitle>
+          </CardHeader>
+          <CardContent className="space-y-4">
+
+            {/* Formulário do membro: apenas se banca ativa e ainda não avaliou */}
+            {isMembro && bancaAtiva && !jaAvaliou && (
+              <div className="space-y-4">
+                <p className="text-sm text-gray-600 dark:text-gray-400">
+                  Como membro desta banca, registre sua avaliação abaixo.
+                </p>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Nota (0 – 10) *
+                  </label>
+                  <input
+                    type="number"
+                    min="0"
+                    max="10"
+                    step="0.1"
+                    value={minhaAvaliacao.nota}
+                    onChange={(e) => setMinhaAvaliacao({ ...minhaAvaliacao, nota: e.target.value })}
+                    className="w-32 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                    placeholder="Ex: 8.5"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-1">
+                    Parecer *
+                  </label>
+                  <textarea
+                    rows={5}
+                    value={minhaAvaliacao.parecer}
+                    onChange={(e) => setMinhaAvaliacao({ ...minhaAvaliacao, parecer: e.target.value })}
+                    placeholder="Escreva seu parecer sobre o trabalho..."
+                    className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
+                  />
+                </div>
+                <Button
+                  variant="gradient"
+                  onClick={async () => {
+                    const nota = parseFloat(minhaAvaliacao.nota);
+                    if (isNaN(nota) || nota < 0 || nota > 10) {
+                      showToast("Nota deve ser entre 0 e 10", "error");
+                      return;
+                    }
+                    if (!minhaAvaliacao.parecer.trim()) {
+                      showToast("Parecer é obrigatório", "error");
+                      return;
+                    }
+                    setIsSubmittingAvaliacao(true);
+                    try {
+                      const res = await fetch("/api/avaliacoes", {
+                        method: "POST",
+                        headers: {
+                          "Content-Type": "application/json",
+                          Authorization: `Bearer ${token}`,
+                        },
+                        body: JSON.stringify({
+                          membroId: meuMembroId,
+                          nota,
+                          parecer: minhaAvaliacao.parecer.trim(),
+                        }),
+                      });
+                      if (res.ok) {
+                        showToast("Avaliação enviada com sucesso!", "success");
+                        setJaAvaliou(true);
+                        if (onUpdate) onUpdate();
+                      } else {
+                        const err = await res.json();
+                        showToast(err.error || "Erro ao enviar avaliação", "error");
+                      }
+                    } catch {
+                      showToast("Erro de conexão ao enviar avaliação", "error");
+                    } finally {
+                      setIsSubmittingAvaliacao(false);
+                    }
+                  }}
+                  disabled={isSubmittingAvaliacao}
+                  isLoading={isSubmittingAvaliacao}
+                >
+                  Enviar Avaliação
+                </Button>
+              </div>
+            )}
+
+            {/* Membro já avaliou mas banca ainda não encerrou */}
+            {isMembro && bancaAtiva && jaAvaliou && (
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                <p className="text-sm font-medium text-green-700 dark:text-green-400">
+                  ✓ Sua avaliação foi registrada. Aguardando os demais membros concluírem.
+                </p>
+                {minhaAvaliacao.nota && (
+                  <p className="text-sm text-green-600 dark:text-green-500 mt-1">
+                    Sua nota: <strong>{parseFloat(minhaAvaliacao.nota).toFixed(1)}</strong>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Listagem de todas as avaliações após banca realizada */}
+            {podeVerAvaliacoes && avaliacoes.length > 0 && (
+              <div className="space-y-4">
+                {isMembro && <hr className="border-gray-200 dark:border-gray-700" />}
+                <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">
+                  Avaliações da Banca
+                </p>
+                {avaliacoes.map((av) => (
+                  <div
+                    key={av.id}
+                    className="p-4 border border-gray-200 dark:border-gray-700 rounded-lg space-y-2"
+                  >
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
+                          {av.membro.titulacao && `${av.membro.titulacao} `}{av.membro.nome}
+                        </p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400">
+                          {av.membro.papel.charAt(0) + av.membro.papel.slice(1).toLowerCase()}
+                        </p>
+                      </div>
+                      <div className="flex flex-col items-end">
+                        <Badge variant="success">Nota: {av.nota.toFixed(1)}</Badge>
+                        <span className="text-xs text-gray-400 dark:text-gray-500 mt-1">
+                          {format(new Date(av.dataAvaliacao), "dd/MM/yyyy", { locale: ptBR })}
+                        </span>
+                      </div>
+                    </div>
+                    <p className="text-sm text-gray-600 dark:text-gray-400 leading-relaxed">
+                      {av.parecer}
+                    </p>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Sem avaliações ainda */}
+            {podeVerAvaliacoes && bancaRealizada && avaliacoes.length === 0 && (
+              <p className="text-sm text-gray-500 dark:text-gray-400 text-center py-4">
+                Nenhuma avaliação registrada ainda.
+              </p>
+            )}
+
           </CardContent>
         </Card>
       )}

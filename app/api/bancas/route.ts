@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import prisma from "@/app/lib/prisma";
+import { prisma } from "@/app/lib/prisma";
 import { withAuth } from "@/app/lib/authMiddleware";
 import { Prisma, BancaStatus } from "@prisma/client";
 import { createBancaSchema } from "@/app/lib/validationSchemas";
