@@ -5,11 +5,8 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/components/ui/Toast";
 import { PublicHeader } from "@/app/components/ui/PublicHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "@/app/components/ui/Card";
-import { Button } from "@/app/components/ui/Button";
-import { Badge } from "@/app/components/ui/Badge";
 import { UserRole } from "@prisma/client";
-import { ArrowLeft, User, Mail, BookOpen, GraduationCap, Save, Edit } from "lucide-react";
+import { ArrowLeft, User, BookOpen, Save } from "lucide-react";
 
 const availableRoles = ["ALUNO", "PROFESSOR", "PROFESSOR_BANCA", "COORDENADOR", "ADMIN"];
 const roleLabels: Record<string, string> = {

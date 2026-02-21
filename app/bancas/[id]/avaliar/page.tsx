@@ -5,7 +5,7 @@ import { Navigation } from "../../../components/layout/Navigation";
 import { EvaluationForm } from "../../../components/bancas/EvaluationForm";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "../../../contexts/AuthContext";
-import { ShieldAlert, Star } from "lucide-react";
+import { Star } from "lucide-react";
 import { Logo } from "../../../components/ui/Logo";
 
 export default function AvaliarBancaPage() {

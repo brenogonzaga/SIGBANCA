@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "@/app/components/ui/Toast";
-import { Card, CardHeader, CardTitle, CardContent } from "@/app/components/ui/Card";
+import { Card } from "@/app/components/ui/Card";
 import { Button } from "@/app/components/ui/Button";
 import { X, Plus, Calendar, BookOpen, MapPin, Globe, User } from "lucide-react";
 import { VALIDATION_CONFIG, VALIDATION_MESSAGES } from "@/app/config";

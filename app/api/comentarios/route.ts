@@ -130,6 +130,19 @@ export const POST = withAuth(async (request: NextRequest, user) => {
       },
     });
 
+    // Notificar o autor da versão se não for o mesmo que comentou
+    if (versao.uploadPorId !== user.userId) {
+      await prisma.notificacao.create({
+        data: {
+          usuarioId: versao.uploadPorId,
+          tipo: "COMENTARIO",
+          titulo: "Novo comentário",
+          mensagem: `${user.nome || "Alguém"} comentou na versão ${versao.numeroVersao} do trabalho "${versao.trabalho.titulo}".`,
+          link: `/trabalhos/${versao.trabalhoId}?versao=${versao.id}`,
+        },
+      });
+    }
+
     return NextResponse.json(comentario, { status: 201 });
   } catch (error: unknown) {
     console.error("Erro ao criar comentário:", error);

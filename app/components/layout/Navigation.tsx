@@ -13,7 +13,8 @@ import {
   ShieldCheck,
   Search,
   Globe,
-  BarChart3
+  BarChart3,
+  BellRing
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { useState } from "react";
@@ -115,7 +116,7 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
           </div>
 
           {/* Desktop Navigation */}
-          <div className="hidden lg:flex lg:items-center lg:space-x-2">
+          <div className="hidden lg:flex lg:items-center flex-wrap gap-1 xl:gap-2">
             {menuItems.map((item) => {
               const Icon = item.icon;
               const isActive = activeView === item.id;
@@ -123,14 +124,14 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
                 <button
                   key={item.id}
                   onClick={() => handleViewChange(item.id)}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
+                  className={`flex items-center gap-2 px-3 xl:px-4 py-2 rounded-xl text-sm font-semibold transition-all duration-300 ${
                     isActive
                       ? "bg-[var(--primary)] text-white shadow-[var(--shadow-colored)] scale-105"
                       : "text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--border-light)]"
                   }`}
                 >
                   <Icon className={`w-4 h-4 ${isActive ? "animate-pulse" : ""}`} />
-                  {item.label}
+                  <span className="hidden xl:inline">{item.label}</span>
                 </button>
               );
             })}
@@ -138,33 +139,43 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
             {/* Link para Trabalhos Públicos */}
             <button
               onClick={() => router.push("/trabalhos-publicos")}
-              className="flex items-center gap-2 px-4 py-2 rounded-xl text-sm font-semibold text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--border-light)] transition-all duration-300"
+              className="flex items-center gap-2 px-3 xl:px-4 py-2 rounded-xl text-sm font-semibold text-[var(--muted)] hover:text-[var(--foreground)] hover:bg-[var(--border-light)] transition-all duration-300"
             >
               <Globe className="w-4 h-4" />
-              Público
+              <span className="hidden xl:inline">Público</span>
             </button>
 
+            {/* Separador vertical flexível */}
+            <div className="h-6 w-px bg-[var(--border)] mx-1 hidden xl:block"></div>
+
             {/* Desktop Actions Section */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               <NotificationBell />
 
               {(usuario?.role === "ADMIN" || usuario?.role === "COORDENADOR") && (
-                <>
+                <div className="flex items-center gap-2 bg-[var(--surface-light)]/40 p-1 rounded-2xl border border-[var(--border-light)]">
                   <Link
                     href="/relatorios"
-                    className="p-2.5 rounded-xl bg-[var(--surface)] text-[var(--muted)] hover:text-emerald-500 border border-[var(--border)] transition-all flex items-center justify-center"
+                    className="p-2 rounded-xl text-[var(--muted)] hover:text-emerald-500 hover:bg-white dark:hover:bg-gray-800 transition-all flex items-center justify-center"
                     title="Análise e Relatórios"
                   >
                     <BarChart3 className="w-5 h-5" />
                   </Link>
-                  <Link
+                   <Link
                     href="/auditoria"
-                    className="p-2.5 rounded-xl bg-[var(--surface)] text-[var(--muted)] hover:text-[var(--primary)] border border-[var(--border)] transition-all flex items-center justify-center"
+                    className="p-2 rounded-xl text-[var(--muted)] hover:text-[var(--primary)] hover:bg-white dark:hover:bg-gray-800 transition-all flex items-center justify-center"
                     title="Logs de Auditoria"
                   >
                     <History className="w-5 h-5" />
                   </Link>
-                </>
+                  <Link
+                    href="/notificacoes/gerenciar"
+                    className="p-2 rounded-xl text-[var(--muted)] hover:text-amber-500 hover:bg-white dark:hover:bg-gray-800 transition-all flex items-center justify-center"
+                    title="Enviar Broadcast"
+                  >
+                    <BellRing className="w-5 h-5" />
+                  </Link>
+                </div>
               )}
 
               {/* Separador */}
@@ -174,14 +185,14 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
               <div className="relative">
               <button
                 onClick={() => setUserMenuOpen(!userMenuOpen)}
-                className="flex items-center gap-3 pl-2 pr-1 py-1 rounded-full bg-[var(--background)] hover:bg-[var(--border-light)] border border-[var(--border)] transition-all duration-300 group"
+                className="flex items-center gap-2 pl-1.5 pr-1 py-1 rounded-full bg-[var(--background)] hover:bg-[var(--border-light)] border border-[var(--border)] transition-all duration-300 group"
               >
                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-[var(--primary)] via-[#7C3AED] to-[var(--accent)] flex items-center justify-center text-white font-bold text-xs shadow-sm group-hover:shadow-md transition-all">
                   {usuario?.nome?.charAt(0).toUpperCase()}
                 </div>
-                <div className="text-left hidden xl:block mr-2">
-                  <div className="text-xs font-bold text-[var(--foreground)] truncate max-w-[120px]">
-                    {usuario?.nome}
+                <div className="text-left hidden 2xl:block mr-2">
+                  <div className="text-xs font-bold text-[var(--foreground)] truncate max-w-[100px]">
+                    {usuario?.nome?.split(' ')[0]}
                   </div>
                 </div>
               </button>

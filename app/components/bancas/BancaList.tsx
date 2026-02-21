@@ -40,11 +40,16 @@ interface Banca {
   }>;
 }
 
-export function BancaList() {
+interface BancaListProps {
+  initialBancas?: Banca[];
+  hideHeader?: boolean;
+}
+
+export function BancaList({ initialBancas, hideHeader = false }: BancaListProps) {
   const { token, usuario } = useAuth();
   const { showToast } = useToast();
-  const [bancas, setBancas] = useState<Banca[]>([]);
-  const [isLoading, setIsLoading] = useState(true);
+  const [bancas, setBancas] = useState<Banca[]>(initialBancas || []);
+  const [isLoading, setIsLoading] = useState(!initialBancas);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bancaToDelete, setBancaToDelete] = useState<{
     id: string;
@@ -115,6 +120,12 @@ export function BancaList() {
   };
 
   useEffect(() => {
+    if (initialBancas) {
+      setBancas(initialBancas);
+      setIsLoading(false);
+      return;
+    }
+
     async function fetchBancas() {
       if (!token) return;
 
@@ -137,7 +148,7 @@ export function BancaList() {
     }
 
     fetchBancas();
-  }, [token]);
+  }, [token, initialBancas]);
 
   const statusConfig = {
     AGENDADA: { label: "Agendada", variant: "info" as const },
@@ -166,23 +177,25 @@ export function BancaList() {
   return (
     <div className="space-y-8 animate-fade-in">
       {/* Header Section */}
-      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-2 border-b border-[var(--border-light)]">
-        <div>
-          <h2 className="text-3xl font-black text-[var(--foreground)] tracking-tight font-[Plus\ Jakarta\ Sans]">
-            Comissões de <span className="bg-gradient-to-r from-[var(--primary)] to-[#7C3AED] bg-clip-text text-transparent italic">Avaliação</span>
-          </h2>
-          <p className="text-[var(--muted)] font-medium mt-1">Acompanhe e gerencie as bancas examinadoras agendadas.</p>
+      {!hideHeader && (
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6 pb-2 border-b border-[var(--border-light)]">
+          <div>
+            <h2 className="text-3xl font-black text-[var(--foreground)] tracking-tight font-[Plus\ Jakarta\ Sans]">
+              Comissões de <span className="bg-gradient-to-r from-[var(--primary)] to-[#7C3AED] bg-clip-text text-transparent italic">Avaliação</span>
+            </h2>
+            <p className="text-[var(--muted)] font-medium mt-1">Acompanhe e gerencie as bancas examinadoras agendadas.</p>
+          </div>
+          {canCreate && (
+            <Link href="/bancas/cadastrar">
+              <button className="group relative flex items-center gap-3 px-8 py-4 bg-[var(--foreground)] text-white rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-black/10">
+                <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[var(--primary)] to-[#7C3AED] opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                <Plus className="w-5 h-5 relative z-10" />
+                <span className="text-sm font-black uppercase tracking-widest relative z-10">Agendar Banca</span>
+              </button>
+            </Link>
+          )}
         </div>
-        {canCreate && (
-          <Link href="/bancas/cadastrar">
-            <button className="group relative flex items-center gap-3 px-8 py-4 bg-[var(--foreground)] text-white rounded-2xl transition-all hover:scale-105 active:scale-95 shadow-2xl shadow-black/10">
-              <div className="absolute inset-0 rounded-2xl bg-gradient-to-r from-[var(--primary)] to-[#7C3AED] opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <Plus className="w-5 h-5 relative z-10" />
-              <span className="text-sm font-black uppercase tracking-widest relative z-10">Agendar Banca</span>
-            </button>
-          </Link>
-        )}
-      </div>
+      )}
 
       {/* Grid of Bancas - Bento Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">

@@ -4,6 +4,7 @@ import { withAuth } from "@/app/lib/authMiddleware";
 import { Prisma, BancaStatus } from "@prisma/client";
 import { createBancaSchema } from "@/app/lib/validationSchemas";
 import { z } from "zod";
+import { format } from "date-fns";
 
 export const GET = withAuth(async (request: NextRequest, user) => {
   try {
@@ -210,6 +211,35 @@ export const POST = withAuth(async (request: NextRequest, user) => {
       });
 
       return novaBanca;
+    });
+
+    // Notificar membros e aluno
+    const notificacoes = [];
+
+    // Notificar Aluno
+    notificacoes.push({
+      usuarioId: banca.trabalho.alunoId,
+      tipo: "BANCA_AGENDADA",
+      titulo: "Banca agendada",
+      mensagem: `A banca do seu trabalho "${banca.trabalho.titulo}" foi agendada para ${data.horario} do dia ${format(dataDate, "dd/MM/yyyy")}.`,
+      link: `/bancas/${banca.id}`,
+    });
+
+    // Notificar Membros (exceto quem criou a banca, se for o caso)
+    banca.membros.forEach((m) => {
+      if (m.usuarioId !== user.userId) {
+        notificacoes.push({
+          usuarioId: m.usuarioId,
+          tipo: "BANCA_CRIADA",
+          titulo: "Convocação para Banca",
+          mensagem: `Você foi convocado como ${m.papel} para a banca do trabalho "${banca.trabalho.titulo}" em ${data.horario} do dia ${format(dataDate, "dd/MM/yyyy")}.`,
+          link: `/bancas/${banca.id}`,
+        });
+      }
+    });
+
+    await prisma.notificacao.createMany({
+      data: notificacoes,
     });
 
     return NextResponse.json(banca, { status: 201 });

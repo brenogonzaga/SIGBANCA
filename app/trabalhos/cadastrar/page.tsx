@@ -1,10 +1,8 @@
 "use client";
 
 import TrabalhoForm from "@/app/components/trabalhos/TrabalhoForm";
-import { Card, CardHeader, CardTitle, CardContent } from "@/app/components/ui/Card";
 import { ArrowLeft } from "lucide-react";
 import Link from "next/link";
-import { Button } from "@/app/components/ui/Button";
 
 export default function CadastrarTrabalhoPage() {
   return (

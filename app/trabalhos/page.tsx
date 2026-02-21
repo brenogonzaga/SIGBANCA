@@ -3,7 +3,6 @@
 import { Navigation } from "../components/layout/Navigation";
 import ProtectedRoute from "../components/ProtectedRoute";
 import { TrabalhoList } from "../components/trabalhos/TrabalhoList";
-import { Trabalho } from "../types";
 import { useRouter } from "next/navigation";
 import { Logo } from "../components/ui/Logo";
 

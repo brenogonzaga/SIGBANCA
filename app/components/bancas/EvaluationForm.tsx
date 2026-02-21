@@ -5,13 +5,11 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { Card } from "../ui/Card";
 import { Badge } from "../ui/Badge";
 import { 
-  GraduationCap, 
   CheckCircle2, 
   AlertCircle, 
   Save, 
   FileText, 
   User as UserIcon,
-  Star,
   MessageSquare,
   Award
 } from "lucide-react";
@@ -31,7 +29,7 @@ interface Criterio {
 
 export function EvaluationForm({ bancaId }: Props) {
   const { token, usuario } = useAuth();
-  const { addToast } = useToast();
+  const { showToast } = useToast();
   const router = useRouter();
   const [banca, setBanca] = useState<any>(null);
   const [membro, setMembro] = useState<any>(null);
@@ -92,7 +90,7 @@ export function EvaluationForm({ bancaId }: Props) {
     if (!membro || isSubmitting) return;
 
     if (parecer.length < 20) {
-      addToast({ type: "ALERTA", message: "O parecer deve ter no mínimo 20 caracteres." });
+      showToast("O parecer deve ter no mínimo 20 caracteres.", "warning");
       return;
     }
 
@@ -113,14 +111,14 @@ export function EvaluationForm({ bancaId }: Props) {
       });
 
       if (response.ok) {
-        addToast({ type: "SUCESSO", message: "Avaliação registrada com sucesso!" });
+        showToast("Avaliação registrada com sucesso!", "success");
         router.push(`/trabalhos/${banca.trabalhoId}`);
       } else {
         const err = await response.json();
-        addToast({ type: "ALERTA", message: err.error || "Erro ao registrar avaliação." });
+        showToast(err.error || "Erro ao registrar avaliação.", "error");
       }
     } catch (error) {
-      addToast({ type: "ALERTA", message: "Erro de conexão com o servidor." });
+      showToast("Erro de conexão com o servidor.", "error");
     } finally {
       setIsSubmitting(false);
     }

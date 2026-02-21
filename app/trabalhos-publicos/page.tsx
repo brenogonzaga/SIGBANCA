@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { PublicHeader } from "../components/ui/PublicHeader";
-import { Card, CardContent, CardHeader, CardTitle } from "../components/ui/Card";
+import { Card } from "../components/ui/Card";
 import { Badge } from "../components/ui/Badge";
 import { Button } from "../components/ui/Button";
 import { Search, Filter, Calendar, User, BookOpen, Award } from "lucide-react";

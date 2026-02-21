@@ -15,8 +15,11 @@ interface Notificacao {
   createdAt: string;
 }
 
+import { useRouter } from "next/navigation";
+
 export function NotificationBell() {
   const { token, usuario } = useAuth();
+  const router = useRouter();
   const [notificacoes, setNotificacoes] = useState<Notificacao[]>([]);
   const [naoLidas, setNaoLidas] = useState(0);
   const [isOpen, setIsOpen] = useState(false);
@@ -206,7 +209,13 @@ export function NotificationBell() {
           </div>
 
           <div className="p-4 bg-[var(--surface-light)]/50 border-t border-[var(--border-light)] text-center">
-             <button className="text-[10px] font-black text-[var(--primary)] uppercase tracking-[0.2em] hover:underline">
+             <button 
+              onClick={() => {
+                setIsOpen(false);
+                router.push("/notificacoes");
+              }}
+              className="text-[10px] font-black text-[var(--primary)] uppercase tracking-[0.2em] hover:underline"
+            >
                Explorar Todo o Histórico
              </button>
           </div>
