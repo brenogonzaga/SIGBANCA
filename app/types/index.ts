@@ -34,6 +34,8 @@ export interface Trabalho {
   versaoAtual: number;
   versoes: VersaoDocumento[];
   banca?: Banca;
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 export type TipoDocumento = "ARQUIVO" | "URL_EXTERNA";

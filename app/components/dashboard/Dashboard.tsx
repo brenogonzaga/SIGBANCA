@@ -15,8 +15,10 @@ import {
 } from "chart.js";
 import { Doughnut, Bar, Line } from "react-chartjs-2";
 import { Card } from "../ui/Card";
+import { Badge } from "../ui/Badge";
 import { FileText, Calendar, Clock, CheckCircle } from "lucide-react";
 import { useAuth } from "@/app/contexts/AuthContext";
+import Link from "next/link";
 
 ChartJS.register(
   CategoryScale,
@@ -59,6 +61,14 @@ interface DashboardStats {
     usuario?: {
       nome: string;
     };
+  }>;
+  insights: Array<{
+    id: string;
+    titulo: string;
+    descricao: string;
+    link: string;
+    tipo: string;
+    prioridade: "ALTA" | "MEDIA" | "BAIXA";
   }>;
 }
 
@@ -226,7 +236,48 @@ export function Dashboard() {
         </div>
       </div>
 
-      {/* Bento Grid Principal */}
+      {/* Actionable Insights Section */}
+      {stats.insights && stats.insights.length > 0 && (
+        <div className="animate-slide-up">
+           <div className="flex items-center gap-3 mb-6">
+              <div className="w-1 h-6 bg-[var(--primary)] rounded-full"></div>
+              <h3 className="text-xl font-black text-[var(--foreground)] tracking-tight">Próximas Atividades</h3>
+           </div>
+           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {stats.insights.map((insight) => (
+                <Link key={insight.id} href={insight.link} className="group">
+                  <Card 
+                    className={`surface-card border-none overflow-hidden h-full group-hover:shadow-2xl transition-all duration-500`}
+                  >
+                    <div className="p-8 relative">
+                      <div className="flex justify-between items-start mb-4">
+                        <div className={`p-3 rounded-xl bg-[var(--surface-light)] border border-[var(--border-light)] group-hover:bg-[var(--primary)] group-hover:text-white transition-all`}>
+                          {insight.tipo === 'REVISAO' || insight.tipo === 'AJUSTE' ? <FileText className="w-5 h-5" /> : 
+                           insight.tipo === 'BANCA' || insight.tipo === 'AGENDAMENTO' ? <Calendar className="w-5 h-5" /> : 
+                           <CheckCircle className="w-5 h-5" />}
+                        </div>
+                        <Badge variant={insight.prioridade === 'ALTA' ? 'danger' : 'warning'} className="text-[8px] font-black tracking-widest uppercase py-0.5">
+                          {insight.prioridade}
+                        </Badge>
+                      </div>
+                      <h4 className="text-lg font-black text-[var(--foreground)] tracking-tight group-hover:text-[var(--primary)] transition-colors mb-2">
+                        {insight.titulo}
+                      </h4>
+                      <p className="text-sm text-[var(--muted)] line-clamp-2 font-medium leading-relaxed">
+                        {insight.descricao}
+                      </p>
+                      <div className="mt-6 flex items-center text-[10px] font-black text-[var(--primary)] uppercase tracking-widest opacity-0 group-hover:opacity-100 transform translate-y-2 group-hover:translate-y-0 transition-all duration-300">
+                        Resolver Agora
+                        <CheckCircle className="w-3 h-3 ml-2" />
+                      </div>
+                    </div>
+                  </Card>
+                </Link>
+              ))}
+           </div>
+        </div>
+      )}
+
       {/* Bento Grid Principal */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
         {/* Stats Section */}

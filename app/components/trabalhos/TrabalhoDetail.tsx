@@ -8,6 +8,7 @@ import { Button } from "../ui/Button";
 import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "../ui/Toast";
 import { FILE_CONFIG, VALIDATION_MESSAGES } from "@/app/config";
+import { RevisionTimeline } from "./RevisionTimeline";
 import {
   FileText,
   User,
@@ -30,6 +31,9 @@ import {
   CheckCircle,
   Star,
   Award,
+  Plus,
+  History,
+  TrendingUp,
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -133,6 +137,10 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
   const [uploadChangelog, setUploadChangelog] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
+  const [isDeletingVersao, setIsDeletingVersao] = useState<string | null>(null);
+  const [showTimeline, setShowTimeline] = useState(true);
+
+  const canEdit = usuario?.role === "ADMIN" || usuario?.id === trabalho.aluno.id;
 
   const handleCloseUploadModal = () => {
     const hasFileData = uploadFile !== null;
@@ -527,6 +535,35 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
         </CardContent>
       </Card>
 
+      {/* Timeline de Evolução - Premium Highlight */}
+      <Card className="surface-card overflow-hidden">
+        <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[var(--primary)] to-[#7C3AED] opacity-50"></div>
+        <CardHeader className="p-8 pb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-4">
+              <div className="w-12 h-12 rounded-2xl bg-[var(--primary-light)]/10 flex items-center justify-center">
+                <TrendingUp className="w-6 h-6 text-[var(--primary)]" />
+              </div>
+              <div>
+                <h3 className="text-2xl font-black text-[var(--foreground)] font-[Plus\ Jakarta\ Sans]">Timeline de Evolução</h3>
+                <p className="text-[var(--muted)] text-sm font-medium">Fluxo cronológico do trabalho acadêmico</p>
+              </div>
+            </div>
+            <button 
+              onClick={() => setShowTimeline(!showTimeline)}
+              className="px-4 py-2 bg-[var(--surface-light)] hover:bg-[var(--primary-light)]/20 text-[var(--muted)] hover:text-[var(--primary)] rounded-xl border border-[var(--border-light)] text-[10px] font-black uppercase tracking-widest transition-all"
+            >
+              {showTimeline ? "Recolher" : "Visualizar Detalhes"}
+            </button>
+          </div>
+        </CardHeader>
+        {showTimeline && (
+          <CardContent className="p-8 pt-0 animate-fade-in">
+            <RevisionTimeline trabalho={trabalho} versoes={trabalho.versoes} />
+          </CardContent>
+        )}
+      </Card>
+
       {/* Histórico de Versões */}
       <Card className="surface-card relative overflow-hidden">
         <div className="absolute top-0 right-0 w-64 h-64 bg-[var(--primary)]/5 rounded-full blur-[100px] pointer-events-none -mr-32 -mt-32"></div>
@@ -592,11 +629,11 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                           
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-xs font-medium text-[var(--muted)]">
                             <span className="flex items-center gap-2 bg-[var(--background)]/50 px-3 py-1 rounded-full border border-[var(--border-light)]">
-                              <Calendar className="w-3.5 h-3.5 text-[var(--primary)]" />
+                              <Calendar className="w-3.5 h-3.5" />
                               {format(new Date(versao.dataUpload), "dd MMM, yyyy", { locale: ptBR })}
                             </span>
                             <span className="flex items-center gap-2 bg-[var(--background)]/50 px-3 py-1 rounded-full border border-[var(--border-light)]">
-                              <User className="w-3.5 h-3.5 text-[var(--accent)]" />
+                              <User className="w-3.5 h-3.5" />
                               {versao.uploadPor?.nome || "Sistema"}
                             </span>
                             {versao.tamanho ? (

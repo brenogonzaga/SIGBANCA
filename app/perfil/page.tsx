@@ -24,7 +24,11 @@ import {
   Activity,
   ArrowUpRight,
   Clock,
-  Target
+  Target,
+  FilePlus,
+  ShieldCheck,
+  Star,
+  Zap
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -204,9 +208,53 @@ export default function PerfilPage() {
                         </div>
                       </>
                     )}
+
+                    {!isLoadingStats && personalStats?.stats.atividadesSemana !== undefined && (
+                      <div className="p-6 rounded-[32px] bg-gradient-to-br from-[#4F46E5] to-[#7C3AED] text-white shadow-xl shadow-indigo-500/20 relative overflow-hidden group">
+                        <div className="absolute top-0 right-0 p-4 opacity-20 transform group-hover:scale-125 transition-transform">
+                          <Zap className="w-12 h-12" />
+                        </div>
+                        <p className="text-[10px] font-black uppercase tracking-[0.2em] opacity-80 mb-2">Índice de Atividade</p>
+                        <div className="flex items-baseline gap-2">
+                          <span className="text-4xl font-black">{personalStats.stats.atividadesSemana}</span>
+                          <span className="text-[10px] font-bold opacity-70">ações / 7 dias</span>
+                        </div>
+                        <div className="mt-4 h-1.5 bg-white/20 rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-white rounded-full shadow-[0_0_10px_rgba(255,255,255,0.5)]" 
+                            style={{ width: `${Math.min(100, (personalStats.stats.atividadesSemana / 10) * 100)}%` }}
+                          ></div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </Card>
+
+              {/* Conquistas Acadêmicas */}
+              {!isLoadingStats && personalStats?.stats.conquistas?.length > 0 && (
+                <Card className="surface-card p-8 border-[var(--border-light)]">
+                  <h3 className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-[0.3em] mb-6 flex items-center gap-2">
+                    <Star className="w-4 h-4 text-amber-500" /> Conquistas Acadêmicas
+                  </h3>
+                  <div className="grid grid-cols-2 gap-3">
+                    {personalStats.stats.conquistas.map((c: any) => (
+                      <div key={c.id} className="p-3 rounded-2xl bg-[var(--surface-light)] border border-[var(--border-light)] flex flex-col items-center text-center gap-2 group hover:border-[var(--primary)] transition-all">
+                        <div className="w-10 h-10 rounded-xl bg-white dark:bg-white/5 flex items-center justify-center text-[var(--primary)] shadow-sm group-hover:scale-110 transition-transform">
+                          {c.icon === "FilePlus" && <FilePlus className="w-5 h-5" />}
+                          {c.icon === "TrendingUp" && <TrendingUp className="w-5 h-5" />}
+                          {c.icon === "Award" && <Award className="w-5 h-5" />}
+                          {c.icon === "CheckCircle" && <CheckCircle className="w-5 h-5" />}
+                          {c.icon === "Users" && <Users className="w-5 h-5" />}
+                          {c.icon === "ShieldCheck" && <ShieldCheck className="w-5 h-5" />}
+                          {c.icon === "Star" && <Star className="w-5 h-5" />}
+                        </div>
+                        <span className="text-[10px] font-black uppercase tracking-tighter leading-tight">{c.titulo}</span>
+                      </div>
+                    ))}
+                  </div>
+                </Card>
+              )}
             </div>
 
             {/* Coluna Direita - Detalhes e Performance */}
@@ -248,6 +296,47 @@ export default function PerfilPage() {
                         </div>
                         <p className="text-[10px] font-black uppercase tracking-widest mt-6 opacity-80">Jornada de Formação</p>
                       </div>
+                    </div>
+                 </Card>
+              )}
+
+              {/* Novidade: Metas e Objetivos Dinâmicos */}
+              {!isLoadingStats && personalStats?.stats.metas?.length > 0 && (
+                <Card className="surface-card p-10 border-[var(--border-light)] overflow-hidden relative">
+                   <div className="absolute top-0 right-0 w-32 h-32 bg-[var(--primary)]/5 rounded-full -mr-16 -mt-16"></div>
+                   <div className="flex items-center justify-between mb-8">
+                     <div>
+                       <h3 className="text-xl font-black text-[var(--foreground)] tracking-tight font-[Plus\ Jakarta\ Sans]">Gestão de Metas</h3>
+                       <p className="text-xs text-[var(--muted)] font-medium mt-1">Sugestões inteligentes baseadas no seu status atual.</p>
+                     </div>
+                     <Target className="w-6 h-6 text-[var(--primary)] opacity-40" />
+                   </div>
+                   
+                   <div className="space-y-4">
+                     {personalStats.stats.metas.map((meta: any, idx: number) => (
+                       <div key={idx} className="flex items-center justify-between p-5 rounded-3xl bg-[var(--surface-light)] border border-[var(--border-light)] hover:border-[var(--primary)]/30 transition-all group">
+                         <div className="flex items-center gap-4">
+                           <div className={`w-2 h-10 rounded-full ${
+                             meta.prioridade === "ALTA" ? "bg-red-500" : 
+                             meta.prioridade === "MEDIA" ? "bg-amber-500" : "bg-emerald-500"
+                           }`}></div>
+                           <div>
+                             <p className="text-sm font-black text-[var(--foreground)]">{meta.titulo}</p>
+                             <div className="flex items-center gap-2 mt-1">
+                               <Badge variant="default" className={`text-[8px] font-black uppercase py-0.5 px-2 rounded-md border-none ${
+                                 meta.prioridade === "ALTA" ? "bg-red-100 text-red-600" : 
+                                 meta.prioridade === "MEDIA" ? "bg-amber-100 text-amber-600" : "bg-emerald-100 text-emerald-600"
+                               }`}>
+                                 Prioridade {meta.prioridade}
+                               </Badge>
+                             </div>
+                           </div>
+                         </div>
+                         <Button size="sm" variant="outline" className="rounded-xl border-[var(--border)] group-hover:bg-[var(--primary)] group-hover:text-white transition-all">
+                            Focar Agora
+                         </Button>
+                       </div>
+                     ))}
                    </div>
                 </Card>
               )}

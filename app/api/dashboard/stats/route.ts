@@ -141,6 +141,84 @@ export const GET = withAuth(async (request, user) => {
       });
     }
 
+    // Actionable Insights (Próximas Atividades)
+    const insights: any[] = [];
+
+    if (user.role === "PROFESSOR") {
+      const aRevisar = await prisma.trabalho.findMany({
+        where: { orientadorId: user.userId, status: "SUBMETIDO" },
+        take: 3,
+        orderBy: { createdAt: "asc" }
+      });
+      aRevisar.forEach(t => insights.push({
+        id: `rev-${t.id}`,
+        prioridade: "ALTA",
+        titulo: "Revisão Pendente",
+        descricao: `O trabalho "${t.titulo}" aguarda seu parecer.`,
+        link: `/trabalhos/${t.id}`,
+        tipo: "REVISAO"
+      }));
+
+      const bancas = await prisma.banca.findMany({
+        where: { membros: { some: { usuarioId: user.userId } }, status: "AGENDADA" },
+        include: { trabalho: true },
+        take: 2,
+        orderBy: { data: "asc" }
+      });
+      bancas.forEach(b => insights.push({
+        id: `ban-${b.id}`,
+        prioridade: "MEDIA",
+        titulo: "Banca Próxima",
+        descricao: `Defesa de "${b.trabalho.titulo}" em ${new Date(b.data).toLocaleDateString("pt-BR")}.`,
+        link: `/bancas`,
+        tipo: "BANCA"
+      }));
+    } else if (user.role === "ALUNO") {
+      const emRevisao = await prisma.trabalho.findFirst({
+        where: { alunoId: user.userId, status: "EM_REVISAO" },
+        orderBy: { createdAt: "desc" }
+      });
+      if (emRevisao) {
+        insights.push({
+          id: `stu-${emRevisao.id}`,
+          prioridade: "ALTA",
+          titulo: "Ajustes Necessários",
+          descricao: `Seu trabalho "${emRevisao.titulo}" retornou para revisão.`,
+          link: `/trabalhos/${emRevisao.id}`,
+          tipo: "AJUSTE"
+        });
+      }
+
+      const comentario = await prisma.comentario.findFirst({
+        where: { versao: { trabalho: { alunoId: user.userId } } },
+        orderBy: { dataComentario: "desc" },
+        include: { versao: { include: { trabalho: true } } }
+      });
+      if (comentario) {
+        insights.push({
+          id: `com-${comentario.id}`,
+          prioridade: "MEDIA",
+          titulo: "Novo Comentário",
+          descricao: `Feedback na versão ${comentario.versao.numeroVersao}.`,
+          link: `/trabalhos/${comentario.versao.trabalhoId}`,
+          tipo: "COMENTARIO"
+        });
+      }
+    } else if (user.role === "COORDENADOR" || user.role === "ADMIN") {
+      const semBanca = await prisma.trabalho.findMany({
+        where: { status: "APROVADO_ORIENTADOR" },
+        take: 3
+      });
+      semBanca.forEach(t => insights.push({
+        id: `coord-${t.id}`,
+        prioridade: "ALTA",
+        titulo: "Agendar Banca",
+        descricao: `"${t.titulo}" aguarda agendamento.`,
+        link: `/bancas/cadastrar?trabalhoId=${t.id}`,
+        tipo: "AGENDAMENTO"
+      }));
+    }
+
     const estatisticasPorCurso = await prisma.$queryRaw<
       { curso: string; total: bigint; aprovados: bigint; reprovados: bigint }[]
     >`
@@ -177,6 +255,7 @@ export const GET = withAuth(async (request, user) => {
       bancasRealizadas,
       bancasEmAndamento,
       pendencias,
+      insights,
 
       distribuicaoPorStatus,
       distribuicaoPorCurso: distribuicaoPorCurso.map((d) => ({

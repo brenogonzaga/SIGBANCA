@@ -80,12 +80,6 @@ model Usuario {
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
 
-    @@index([email])
-    @@index([matricula])
-    @@index([role])
-    @@map("usuarios")
-}
-
 model Trabalho {
     id            String         @id @default(cuid())
     titulo        String

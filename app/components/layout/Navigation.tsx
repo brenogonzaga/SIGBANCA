@@ -25,8 +25,8 @@ import { Logo } from "@/app/components/ui/Logo";
 import { Badge } from "@/app/components/ui/Badge";
 
 interface NavigationProps {
-  activeView: "dashboard" | "trabalhos" | "bancas" | "usuarios";
-  onViewChange: (view: "dashboard" | "trabalhos" | "bancas" | "usuarios") => void;
+  activeView?: "dashboard" | "trabalhos" | "bancas" | "usuarios";
+  onViewChange?: (view: "dashboard" | "trabalhos" | "bancas" | "usuarios") => void;
 }
 
 const roleLabels: Record<string, string> = {
@@ -48,7 +48,7 @@ const roleVariants: Record<
   ADMIN: "danger",
 };
 
-export function Navigation({ activeView, onViewChange }: NavigationProps) {
+export function Navigation({ activeView, onViewChange }: NavigationProps = {}) {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const { usuario, logout } = useAuth();
@@ -93,7 +93,9 @@ export function Navigation({ activeView, onViewChange }: NavigationProps) {
   const handleViewChange = (view: "dashboard" | "trabalhos" | "bancas" | "usuarios") => {
     setMobileMenuOpen(false);
     router.push(view === "dashboard" ? "/dashboard" : `/${view}`);
-    onViewChange(view);
+    if (onViewChange) {
+      onViewChange(view);
+    }
   };
 
   const handleProfileClick = () => {
