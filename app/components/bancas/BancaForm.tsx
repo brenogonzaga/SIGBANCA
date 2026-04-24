@@ -11,15 +11,15 @@ import { VALIDATION_CONFIG, VALIDATION_MESSAGES } from "@/app/config";
 
 interface BancaFormProps {
   bancaId?: string;
+  trabalhoIdInicial?: string;
   onSuccess?: () => void;
 }
 
 interface Trabalho {
   id: string;
   titulo: string;
-  aluno: {
-    nome: string;
-  };
+  aluno: { nome: string };
+  orientador: { id: string; nome: string; titulacao?: string };
 }
 
 interface Usuario {
@@ -33,7 +33,7 @@ interface MembroBanca {
   papel: "ORIENTADOR" | "AVALIADOR" | "SUPLENTE";
 }
 
-export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
+export function BancaForm({ bancaId, trabalhoIdInicial, onSuccess }: BancaFormProps) {
   const router = useRouter();
   const { token } = useAuth();
   const { showToast } = useToast();
@@ -45,7 +45,7 @@ export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
   const [professores, setProfessores] = useState<Usuario[]>([]);
 
   const [formData, setFormData] = useState({
-    trabalhoId: "",
+    trabalhoId: trabalhoIdInicial ?? "",
     data: "",
     horario: "",
     local: "",
@@ -63,15 +63,28 @@ export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [bancaId]);
 
+  // Quando um trabalho é selecionado, adiciona automaticamente o orientador como membro ORIENTADOR
+  useEffect(() => {
+    if (!formData.trabalhoId || bancaId) return; // não alterar ao editar banca existente
+    const t = trabalhos.find((x) => x.id === formData.trabalhoId);
+    if (!t) return;
+    setFormData((prev) => {
+      const semOrientador = prev.membros.filter((m) => m.papel !== "ORIENTADOR");
+      return {
+        ...prev,
+        membros: [{ usuarioId: t.orientador.id, papel: "ORIENTADOR" }, ...semOrientador],
+      };
+    });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [formData.trabalhoId, trabalhos]);
+
   async function loadTrabalhos() {
     setIsLoadingTrabalhos(true);
     try {
-      // Carregar apenas trabalhos aptos para agendar banca (APROVADO_ORIENTADOR ou AGUARDANDO_BANCA)
+      // Carregar todos os trabalhos ativos (professor pode pré-agendar a qualquer momento)
       const response = await fetch(
-        "/api/trabalhos?status=APROVADO_ORIENTADOR,AGUARDANDO_BANCA",
-        {
-          headers: { Authorization: `Bearer ${token}` },
-        }
+        "/api/trabalhos?status=EM_ELABORACAO,SUBMETIDO,EM_REVISAO,APROVADO_ORIENTADOR,AGUARDANDO_BANCA",
+        { headers: { Authorization: `Bearer ${token}` } },
       );
       if (response.ok) {
         const data = await response.json();
@@ -250,11 +263,14 @@ export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
 
       if (response.ok) {
         showToast(
-          bancaId ? "Banca atualizada com sucesso!" : "Banca criada com sucesso!",
-          "success"
+          bancaId ? "Banca atualizada com sucesso!" : "Banca agendada com sucesso!",
+          "success",
         );
         if (onSuccess) {
           onSuccess();
+        } else if (trabalhoIdInicial) {
+          // Voltar ao detalhe do trabalho para confirmar agendamento
+          router.push(`/trabalhos/${trabalhoIdInicial}`);
         } else {
           router.push("/bancas");
         }
@@ -304,7 +320,9 @@ export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
                 <h2 className="text-3xl font-black text-[var(--foreground)] tracking-tight font-[Plus\ Jakarta\ Sans] leading-tight">
                   {bancaId ? "Refinar Defesa" : "Agendar Nova Defesa"}
                 </h2>
-                <p className="text-[var(--muted)] font-medium mt-1">Sincronize os avaliadores e defina os parâmetros do rito acadêmico.</p>
+                <p className="text-[var(--muted)] font-medium mt-1">
+                  Sincronize os avaliadores e defina os parâmetros do rito acadêmico.
+                </p>
               </div>
             </div>
           </div>
@@ -321,10 +339,12 @@ export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
                   value={formData.trabalhoId}
                   onChange={(e) => setFormData({ ...formData, trabalhoId: e.target.value })}
                   className="w-full px-6 py-5 bg-[var(--background)] border border-[var(--border)] rounded-[24px] appearance-none focus:ring-4 focus:ring-amber-500/10 focus:border-amber-500/30 outline-none transition-all text-lg font-black text-[var(--foreground)] disabled:opacity-70 disabled:grayscale-[0.5]"
-                  disabled={!!bancaId || isLoadingTrabalhos}
+                  disabled={!!bancaId || !!trabalhoIdInicial || isLoadingTrabalhos}
                 >
                   <option value="">
-                    {isLoadingTrabalhos ? "Carregando produções..." : "Selecione o trabalho para defesa"}
+                    {isLoadingTrabalhos
+                      ? "Carregando produções..."
+                      : "Selecione o trabalho para defesa"}
                   </option>
                   {trabalhos.map((t) => (
                     <option key={t.id} value={t.id}>
@@ -341,7 +361,9 @@ export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
             {/* Grid Logística */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-8 p-8 bg-[var(--surface-light)]/40 rounded-[40px] border border-[var(--border)] shadow-inner">
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest ml-1 block">Data</label>
+                <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest ml-1 block">
+                  Data
+                </label>
                 <input
                   type="date"
                   required
@@ -351,7 +373,9 @@ export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
                 />
               </div>
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest ml-1 block">Horário</label>
+                <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest ml-1 block">
+                  Horário
+                </label>
                 <input
                   type="time"
                   required
@@ -361,11 +385,15 @@ export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
                 />
               </div>
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest ml-1 block">Modalidade</label>
+                <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest ml-1 block">
+                  Modalidade
+                </label>
                 <select
                   required
                   value={formData.modalidade}
-                  onChange={(e) => setFormData({ ...formData, modalidade: e.target.value as any })}
+                  onChange={(e) =>
+                    setFormData({ ...formData, modalidade: e.target.value as any })
+                  }
                   className="w-full px-5 py-4 bg-[var(--background)] border border-[var(--border)] rounded-2xl focus:ring-4 focus:ring-[var(--primary)]/10 focus:border-[var(--primary-light)] outline-none transition-all font-bold text-[var(--foreground)] appearance-none"
                 >
                   <option value="PRESENCIAL">Presencial</option>
@@ -377,8 +405,10 @@ export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
 
             {/* Local e Link */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-               <div className="space-y-3">
-                <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest ml-1 block">Localização Física / Sala</label>
+              <div className="space-y-3">
+                <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest ml-1 block">
+                  Localização Física / Sala
+                </label>
                 <div className="relative group">
                   <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--muted-light)]">
                     <MapPin className="w-5 h-5" />
@@ -393,19 +423,23 @@ export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
                   />
                 </div>
               </div>
-              
+
               {(formData.modalidade === "REMOTO" || formData.modalidade === "HIBRIDO") && (
                 <div className="space-y-3 animate-in slide-in-from-top-2">
-                  <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest ml-1 block">Acesso Virtual (Link)</label>
+                  <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest ml-1 block">
+                    Acesso Virtual (Link)
+                  </label>
                   <div className="relative group">
                     <div className="absolute left-5 top-1/2 -translate-y-1/2 text-[var(--primary)]">
-                       <Globe className="w-5 h-5" />
+                      <Globe className="w-5 h-5" />
                     </div>
                     <input
                       type="url"
                       required
                       value={formData.linkReuniao}
-                      onChange={(e) => setFormData({ ...formData, linkReuniao: e.target.value })}
+                      onChange={(e) =>
+                        setFormData({ ...formData, linkReuniao: e.target.value })
+                      }
                       placeholder="https://zoom.us/j/..."
                       className="w-full pl-14 pr-6 py-4 bg-[var(--background)] border border-[var(--border)] rounded-2xl focus:ring-4 focus:ring-[var(--primary)]/10 transition-all font-medium text-[var(--foreground)]"
                     />
@@ -418,11 +452,15 @@ export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
             <div className="pt-10 border-t border-[var(--border-light)]">
               <div className="flex items-center justify-between mb-8">
                 <div>
-                  <h3 className="text-2xl font-black text-[var(--foreground)] tracking-tight font-[Plus\ Jakarta\ Sans]">Membros Avaliadores</h3>
-                  <p className="text-sm text-[var(--muted)] font-medium">Selecione os professores que compõem a comissão julgadora.</p>
+                  <h3 className="text-2xl font-black text-[var(--foreground)] tracking-tight font-[Plus\ Jakarta\ Sans]">
+                    Membros Avaliadores
+                  </h3>
+                  <p className="text-sm text-[var(--muted)] font-medium">
+                    Selecione os professores que compõem a comissão julgadora.
+                  </p>
                 </div>
-                <button 
-                  type="button" 
+                <button
+                  type="button"
                   onClick={addMembro}
                   className="flex items-center gap-3 px-6 py-3 rounded-2xl bg-[var(--primary)] text-white font-black text-xs hover:shadow-xl hover:shadow-[var(--primary)]/20 transition-all active:scale-95"
                 >
@@ -432,68 +470,99 @@ export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
               </div>
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {formData.membros.map((membro, index) => (
-                  <div
-                    key={index}
-                    className="group relative p-6 bg-[var(--background)] border border-[var(--border)] rounded-[32px] hover:border-[var(--primary-light)] hover:shadow-2xl transition-all duration-500 animate-in zoom-in-95"
-                  >
-                    <button
-                      type="button"
-                      onClick={() => removeMembro(index)}
-                      className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-white dark:bg-[var(--surface)] text-[var(--danger)] shadow-lg flex items-center justify-center hover:bg-[var(--danger)] hover:text-white transition-all opacity-0 group-hover:opacity-100 z-20"
+                {formData.membros.map((membro, index) => {
+                  const isOrientadorMembro = membro.papel === "ORIENTADOR";
+                  return (
+                    <div
+                      key={index}
+                      className={`group relative p-6 border rounded-[32px] hover:shadow-2xl transition-all duration-500 animate-in zoom-in-95 ${
+                        isOrientadorMembro
+                          ? "bg-[var(--primary-light)]/10 border-[var(--primary-light)]"
+                          : "bg-[var(--background)] border-[var(--border)] hover:border-[var(--primary-light)]"
+                      }`}
                     >
-                      <X className="w-5 h-5" />
-                    </button>
-                    
-                    <div className="space-y-5">
-                      <div className="space-y-2">
-                        <label className="text-[8px] font-black text-[var(--muted)] uppercase tracking-widest block ml-1">Docente Escolhido</label>
-                        <select
-                          required
-                          value={membro.usuarioId}
-                          onChange={(e) => updateMembro(index, "usuarioId", e.target.value)}
-                          disabled={isLoadingProfessores}
-                          className="w-full px-5 py-4 bg-[var(--surface-light)] border border-transparent rounded-[20px] focus:ring-4 focus:ring-[var(--primary-light)] outline-none transition-all text-sm font-bold appearance-none shadow-inner"
+                      {/* Orientador não pode ser removido */}
+                      {!isOrientadorMembro && (
+                        <button
+                          type="button"
+                          onClick={() => removeMembro(index)}
+                          className="absolute -top-3 -right-3 w-10 h-10 rounded-full bg-white dark:bg-[var(--surface)] text-[var(--danger)] shadow-lg flex items-center justify-center hover:bg-[var(--danger)] hover:text-white transition-all opacity-0 group-hover:opacity-100 z-20"
                         >
-                          <option value="">Selecione o professor...</option>
-                          {professores.map((p) => (
-                            <option key={p.id} value={p.id}>
-                              {p.titulacao ? `${p.titulacao} ` : ""}{p.nome}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
+                          <X className="w-5 h-5" />
+                        </button>
+                      )}
+                      {isOrientadorMembro && (
+                        <span className="absolute -top-3 left-4 px-3 py-1 bg-[var(--primary)] text-white text-[9px] font-black uppercase tracking-widest rounded-full">
+                          Orientador
+                        </span>
+                      )}
 
-                      <div className="space-y-2">
-                        <label className="text-[8px] font-black text-[var(--muted)] uppercase tracking-widest block ml-1">Função</label>
-                        <div className="flex gap-2">
-                          {["ORIENTADOR", "AVALIADOR", "SUPLENTE"].map((role) => (
-                            <button
-                              key={role}
-                              type="button"
-                              onClick={() => updateMembro(index, "papel", role)}
-                              className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-tighter transition-all ${
-                                membro.papel === role 
-                                  ? "bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/10" 
-                                  : "bg-[var(--surface-light)] text-[var(--muted)] hover:text-[var(--foreground)]"
-                              }`}
-                            >
-                              {role}
-                            </button>
-                          ))}
+                      <div className="space-y-5">
+                        <div className="space-y-2">
+                          <label className="text-[8px] font-black text-[var(--muted)] uppercase tracking-widest block ml-1">
+                            {isOrientadorMembro
+                              ? "Orientador (automático)"
+                              : "Docente Escolhido"}
+                          </label>
+                          <select
+                            required
+                            value={membro.usuarioId}
+                            onChange={(e) => updateMembro(index, "usuarioId", e.target.value)}
+                            disabled={isLoadingProfessores || isOrientadorMembro}
+                            className="w-full px-5 py-4 bg-[var(--surface-light)] border border-transparent rounded-[20px] focus:ring-4 focus:ring-[var(--primary-light)] outline-none transition-all text-sm font-bold appearance-none shadow-inner disabled:opacity-70 disabled:cursor-not-allowed"
+                          >
+                            <option value="">Selecione o professor...</option>
+                            {professores.map((p) => (
+                              <option key={p.id} value={p.id}>
+                                {p.titulacao ? `${p.titulacao} ` : ""}
+                                {p.nome}
+                              </option>
+                            ))}
+                          </select>
+                        </div>
+
+                        <div className="space-y-2">
+                          <label className="text-[8px] font-black text-[var(--muted)] uppercase tracking-widest block ml-1">
+                            Função
+                          </label>
+                          <div className="flex gap-2">
+                            {(["ORIENTADOR", "AVALIADOR", "SUPLENTE"] as const).map((role) => (
+                              <button
+                                key={role}
+                                type="button"
+                                disabled={isOrientadorMembro}
+                                onClick={() =>
+                                  !isOrientadorMembro && updateMembro(index, "papel", role)
+                                }
+                                className={`flex-1 py-3 rounded-xl text-[9px] font-black uppercase tracking-tighter transition-all ${
+                                  membro.papel === role
+                                    ? "bg-[var(--primary)] text-white shadow-lg shadow-[var(--primary)]/10"
+                                    : "bg-[var(--surface-light)] text-[var(--muted)] hover:text-[var(--foreground)]"
+                                } disabled:cursor-not-allowed`}
+                              >
+                                {role}
+                              </button>
+                            ))}
+                          </div>
                         </div>
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
 
                 {formData.membros.length === 0 && (
                   <div className="md:col-span-2 py-20 bg-[var(--surface-light)]/20 border border-dashed border-[var(--border)] rounded-[40px] text-center">
                     <div className="w-16 h-16 bg-[var(--background)] rounded-[24px] flex items-center justify-center mx-auto mb-6 border border-[var(--border)] shadow-inner">
-                       <User className="w-8 h-8 text-[var(--muted-light)]" />
+                      <User className="w-8 h-8 text-[var(--muted-light)]" />
                     </div>
-                    <h4 className="text-xl font-black text-[var(--foreground)] mb-1">Banca Vazia</h4>
-                    <p className="text-[var(--muted)] font-medium">Pelo menos um membro deve ser escalado.</p>
+                    <h4 className="text-xl font-black text-[var(--foreground)] mb-1">
+                      Banca Vazia
+                    </h4>
+                    <p className="text-[var(--muted)] font-medium">
+                      Selecione o trabalho acima para adicionar o orientador automaticamente.
+                      <br />
+                      Em seguida, convide os avaliadores.
+                    </p>
                   </div>
                 )}
               </div>
@@ -512,9 +581,9 @@ export function BancaForm({ bancaId, onSuccess }: BancaFormProps) {
         >
           Retornar
         </button>
-        <Button 
-          type="submit" 
-          variant="gradient" 
+        <Button
+          type="submit"
+          variant="gradient"
           size="lg"
           isLoading={isLoading}
           className="rounded-2xl px-12 shadow-lg shadow-[var(--primary)]/20 hover:shadow-xl transition-all"

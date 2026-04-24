@@ -293,18 +293,60 @@ async function main() {
           role: "ALUNO",
           cpf: `${500 + index}.${500 + index}.${500 + index}-${(index % 90) + 10}`,
           telefone: `(92) 99${String(index + 100).padStart(3, "0")}-${String(
-            (index + 1) * 111
+            (index + 1) * 111,
           ).slice(-4)}`,
           matricula: `${2020 + (index % 5)}${String(index + 1).padStart(3, "0")}`,
           curso: cursos[index % cursos.length],
           dataIngresso: new Date(`${2020 + (index % 5)}-03-01`),
           ativo: true,
         },
-      })
-    )
+      }),
+    ),
   );
 
-  console.log(`✅ Criados ${alunos.length} alunos`);
+  console.log(`✅ Criados ${alunos.length} alunos com trabalhos`);
+
+  // ========== ALUNOS SEM TRABALHOS ==========
+  const nomesAlunosSemTrabalho = [
+    { nome: "Gustavo Ferreira Alves", email: "gustavo.alves" },
+    { nome: "Melissa Costa Ribeiro", email: "melissa.ribeiro" },
+    { nome: "Henrique Santos Barbosa", email: "henrique.barbosa" },
+    { nome: "Valentina Lima Cardoso", email: "valentina.cardoso" },
+    { nome: "Arthur Oliveira Dias", email: "arthur.dias" },
+    { nome: "Sophia Rodrigues Moreira", email: "sophia.moreira" },
+    { nome: "Pedro Henrique Souza", email: "pedro.souza" },
+    { nome: "Alice Pereira Gomes", email: "alice.gomes" },
+    { nome: "Miguel Santos Correia", email: "miguel.correia" },
+    { nome: "Helena Costa Nunes", email: "helena.nunes" },
+    { nome: "Davi Lima Monteiro", email: "davi.monteiro" },
+    { nome: "Laura Alves Teixeira", email: "laura.teixeira" },
+    { nome: "Enzo Silva Carvalho", email: "enzo.carvalho" },
+    { nome: "Manuela Ferreira Pinto", email: "manuela.pinto" },
+    { nome: "Bernardo Costa Araujo", email: "bernardo.araujo" },
+  ];
+
+  const alunosSemTrabalho = await Promise.all(
+    nomesAlunosSemTrabalho.map((aluno, index) =>
+      prisma.usuario.create({
+        data: {
+          email: `${aluno.email}@edu.ifam.edu.br`,
+          senha: senhaHash,
+          nome: aluno.nome,
+          role: "ALUNO",
+          cpf: `${600 + index}.${600 + index}.${600 + index}-${(index % 90) + 10}`,
+          telefone: `(92) 99${String(index + 200).padStart(3, "0")}-${String(
+            (index + 1) * 123,
+          ).slice(-4)}`,
+          matricula: `${2021 + (index % 4)}${String(index + 100).padStart(3, "0")}`,
+          curso: cursos[index % cursos.length],
+          dataIngresso: new Date(`${2021 + (index % 4)}-03-01`),
+          ativo: true,
+        },
+      }),
+    ),
+  );
+
+  console.log(`✅ Criados ${alunosSemTrabalho.length} alunos sem trabalhos`);
 
   // ========== TRABALHOS COM DIVERSIDADE ==========
   const titulosTrabalhos = [
@@ -440,7 +482,7 @@ async function main() {
           palavrasChave: trabalho.palavrasChave,
         },
       });
-    })
+    }),
   );
 
   console.log(`✅ Criados ${trabalhos.length} trabalhos`);
@@ -488,7 +530,8 @@ async function main() {
             arquivoUrl: `/uploads/trabalhos/${trabalho.id}/v${v}/documento.pdf`,
             tamanho: Math.floor(Math.random() * 2000000) + 500000, // 500KB a 2.5MB
             mimeType: "application/pdf",
-            changelog: v === 1 ? "Versão inicial do TCC" : `Versão ${v} - Correções e melhorias`,
+            changelog:
+              v === 1 ? "Versão inicial do TCC" : `Versão ${v} - Correções e melhorias`,
           },
         });
       }
@@ -500,7 +543,7 @@ async function main() {
   // ========== BANCAS ==========
   const bancas = [];
   const trabalhosBancaAgendada = trabalhos.filter((t) =>
-    ["BANCA_AGENDADA", "AGUARDANDO_BANCA"].includes(t.status)
+    ["BANCA_AGENDADA", "AGUARDANDO_BANCA"].includes(t.status),
   );
 
   for (const trabalho of trabalhosBancaAgendada) {
@@ -688,7 +731,8 @@ async function main() {
   console.log(`   - ${2} Coordenadores`);
   console.log(`   - ${professores.length} Professores Orientadores`);
   console.log(`   - ${professoresBanca.length} Professores de Banca`);
-  console.log(`   - ${alunos.length} Alunos`);
+  console.log(`   - ${alunos.length} Alunos com trabalhos`);
+  console.log(`   - ${alunosSemTrabalho.length} Alunos sem trabalhos`);
   console.log(`   - ${trabalhos.length} Trabalhos de Conclusão`);
   console.log(`   - ${bancas.length} Bancas Agendadas`);
   console.log("\n📧 Credenciais de acesso (todos com senha: senha123):");
@@ -697,7 +741,12 @@ async function main() {
   console.log("   Coordenador: coordenador@ifam.edu.br");
   console.log("   Coordenador 2: coord.ti@ifam.edu.br");
   console.log("   Professores: maria.santos@ifam.edu.br, joao.oliveira@ifam.edu.br, etc.");
-  console.log("   Alunos: breno.santos@edu.ifam.edu.br, juliana.costa@edu.ifam.edu.br, etc.\n");
+  console.log(
+    "   Alunos com trabalhos: breno.santos@edu.ifam.edu.br, juliana.costa@edu.ifam.edu.br, etc.",
+  );
+  console.log(
+    "   Alunos sem trabalhos: gustavo.alves@edu.ifam.edu.br, melissa.ribeiro@edu.ifam.edu.br, etc.\n",
+  );
 }
 
 main()

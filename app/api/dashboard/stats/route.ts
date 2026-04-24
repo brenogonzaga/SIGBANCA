@@ -1,45 +1,53 @@
 import { NextResponse } from "next/server";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/app/lib/prisma";
 import { withAuth } from "@/app/lib/authMiddleware";
 
 export const GET = withAuth(async (request, user) => {
   try {
-    const totalTrabalhos = await prisma.trabalho.count();
+    const scopeWhere: Prisma.TrabalhoWhereInput =
+      user.role === "ALUNO"
+        ? { alunoId: user.userId }
+        : user.role === "PROFESSOR"
+          ? { orientadorId: user.userId }
+          : {};
+
+    const totalTrabalhos = await prisma.trabalho.count({ where: scopeWhere });
 
     const trabalhosEmElaboracao = await prisma.trabalho.count({
-      where: { status: "EM_ELABORACAO" },
+      where: { ...scopeWhere, status: "EM_ELABORACAO" },
     });
 
     const trabalhosSubmetidos = await prisma.trabalho.count({
-      where: { status: "SUBMETIDO" },
+      where: { ...scopeWhere, status: "SUBMETIDO" },
     });
 
     const trabalhosEmRevisao = await prisma.trabalho.count({
-      where: { status: "EM_REVISAO" },
+      where: { ...scopeWhere, status: "EM_REVISAO" },
     });
 
     const trabalhosAprovadosOrientador = await prisma.trabalho.count({
-      where: { status: "APROVADO_ORIENTADOR" },
+      where: { ...scopeWhere, status: "APROVADO_ORIENTADOR" },
     });
 
     const trabalhosAguardandoBanca = await prisma.trabalho.count({
-      where: { status: "AGUARDANDO_BANCA" },
+      where: { ...scopeWhere, status: "AGUARDANDO_BANCA" },
     });
 
     const trabalhosBancaAgendada = await prisma.trabalho.count({
-      where: { status: "BANCA_AGENDADA" },
+      where: { ...scopeWhere, status: "BANCA_AGENDADA" },
     });
 
     const trabalhosAprovados = await prisma.trabalho.count({
-      where: { status: "APROVADO" },
+      where: { ...scopeWhere, status: "APROVADO" },
     });
 
     const trabalhosReprovados = await prisma.trabalho.count({
-      where: { status: "REPROVADO" },
+      where: { ...scopeWhere, status: "REPROVADO" },
     });
 
     const trabalhosCancelados = await prisma.trabalho.count({
-      where: { status: "CANCELADO" },
+      where: { ...scopeWhere, status: "CANCELADO" },
     });
 
     // Bancas
@@ -99,8 +107,41 @@ export const GET = withAuth(async (request, user) => {
       .slice(0, 10)
       .map(([tema, quantidade]) => ({ tema, quantidade }));
 
-    // Feed de atividades recentes (últimas 20 ações)
+    // Feed de atividades recentes — filtrado por papel do usuário
+    let atividadesWhere: Prisma.AuditLogWhereInput = {};
+    if (user.role === "ALUNO") {
+      const meusTrabalhosIds = (
+        await prisma.trabalho.findMany({
+          where: { alunoId: user.userId },
+          select: { id: true },
+        })
+      ).map((t) => t.id);
+      atividadesWhere = {
+        OR: [
+          { usuarioId: user.userId },
+          { entidade: "TRABALHO", entidadeId: { in: meusTrabalhosIds } },
+        ],
+      };
+    } else if (user.role === "PROFESSOR") {
+      const meusOrientandosIds = (
+        await prisma.trabalho.findMany({
+          where: { orientadorId: user.userId },
+          select: { id: true },
+        })
+      ).map((t) => t.id);
+      atividadesWhere = {
+        OR: [
+          { usuarioId: user.userId },
+          { entidade: "TRABALHO", entidadeId: { in: meusOrientandosIds } },
+        ],
+      };
+    } else if (user.role === "PROFESSOR_BANCA") {
+      atividadesWhere = { usuarioId: user.userId };
+    }
+    // ADMIN e COORDENADOR veem tudo (sem filtro)
+
     const atividadesRecentes = await prisma.auditLog.findMany({
+      where: atividadesWhere,
       take: 20,
       orderBy: { createdAt: "desc" },
       include: {
@@ -148,35 +189,73 @@ export const GET = withAuth(async (request, user) => {
       const aRevisar = await prisma.trabalho.findMany({
         where: { orientadorId: user.userId, status: "SUBMETIDO" },
         take: 3,
-        orderBy: { createdAt: "asc" }
+        orderBy: { createdAt: "asc" },
       });
-      aRevisar.forEach(t => insights.push({
-        id: `rev-${t.id}`,
-        prioridade: "ALTA",
-        titulo: "Revisão Pendente",
-        descricao: `O trabalho "${t.titulo}" aguarda seu parecer.`,
-        link: `/trabalhos/${t.id}`,
-        tipo: "REVISAO"
-      }));
+      aRevisar.forEach((t) =>
+        insights.push({
+          id: `rev-${t.id}`,
+          prioridade: "ALTA",
+          titulo: "Revisão Pendente",
+          descricao: `O trabalho "${t.titulo}" aguarda seu parecer.`,
+          link: `/trabalhos/${t.id}`,
+          tipo: "REVISAO",
+        }),
+      );
+
+      // Trabalhos aguardando criação de banca (orientador precisa agendar)
+      const aguardandoBanca = await prisma.trabalho.findMany({
+        where: { orientadorId: user.userId, status: "AGUARDANDO_BANCA" },
+        take: 3,
+        orderBy: { updatedAt: "asc" },
+      });
+      aguardandoBanca.forEach((t) =>
+        insights.push({
+          id: `banca-${t.id}`,
+          prioridade: "ALTA",
+          titulo: "Agendar Banca",
+          descricao: `"${t.titulo}" aguarda agendamento da banca examinadora.`,
+          link: `/bancas/cadastrar?trabalhoId=${t.id}`,
+          tipo: "AGENDAMENTO",
+        }),
+      );
 
       const bancas = await prisma.banca.findMany({
         where: { membros: { some: { usuarioId: user.userId } }, status: "AGENDADA" },
         include: { trabalho: true },
         take: 2,
-        orderBy: { data: "asc" }
+        orderBy: { data: "asc" },
       });
-      bancas.forEach(b => insights.push({
-        id: `ban-${b.id}`,
-        prioridade: "MEDIA",
-        titulo: "Banca Próxima",
-        descricao: `Defesa de "${b.trabalho.titulo}" em ${new Date(b.data).toLocaleDateString("pt-BR")}.`,
-        link: `/bancas`,
-        tipo: "BANCA"
-      }));
+      bancas.forEach((b) =>
+        insights.push({
+          id: `ban-${b.id}`,
+          prioridade: "MEDIA",
+          titulo: "Banca Próxima",
+          descricao: `Defesa de "${b.trabalho.titulo}" em ${new Date(b.data).toLocaleDateString("pt-BR")}.`,
+          link: `/bancas`,
+          tipo: "BANCA",
+        }),
+      );
+    } else if (user.role === "PROFESSOR_BANCA") {
+      const bancas = await prisma.banca.findMany({
+        where: { membros: { some: { usuarioId: user.userId } }, status: "AGENDADA" },
+        include: { trabalho: true },
+        take: 3,
+        orderBy: { data: "asc" },
+      });
+      bancas.forEach((b) =>
+        insights.push({
+          id: `ban-${b.id}`,
+          prioridade: "ALTA",
+          titulo: "Banca Agendada",
+          descricao: `Você foi convocado para a defesa de "${b.trabalho.titulo}" em ${new Date(b.data).toLocaleDateString("pt-BR")}.`,
+          link: `/bancas`,
+          tipo: "BANCA",
+        }),
+      );
     } else if (user.role === "ALUNO") {
       const emRevisao = await prisma.trabalho.findFirst({
         where: { alunoId: user.userId, status: "EM_REVISAO" },
-        orderBy: { createdAt: "desc" }
+        orderBy: { createdAt: "desc" },
       });
       if (emRevisao) {
         insights.push({
@@ -185,14 +264,14 @@ export const GET = withAuth(async (request, user) => {
           titulo: "Ajustes Necessários",
           descricao: `Seu trabalho "${emRevisao.titulo}" retornou para revisão.`,
           link: `/trabalhos/${emRevisao.id}`,
-          tipo: "AJUSTE"
+          tipo: "AJUSTE",
         });
       }
 
       const comentario = await prisma.comentario.findFirst({
         where: { versao: { trabalho: { alunoId: user.userId } } },
         orderBy: { dataComentario: "desc" },
-        include: { versao: { include: { trabalho: true } } }
+        include: { versao: { include: { trabalho: true } } },
       });
       if (comentario) {
         insights.push({
@@ -201,22 +280,28 @@ export const GET = withAuth(async (request, user) => {
           titulo: "Novo Comentário",
           descricao: `Feedback na versão ${comentario.versao.numeroVersao}.`,
           link: `/trabalhos/${comentario.versao.trabalhoId}`,
-          tipo: "COMENTARIO"
+          tipo: "COMENTARIO",
         });
       }
     } else if (user.role === "COORDENADOR" || user.role === "ADMIN") {
       const semBanca = await prisma.trabalho.findMany({
-        where: { status: "APROVADO_ORIENTADOR" },
-        take: 3
+        where: { status: { in: ["APROVADO_ORIENTADOR", "AGUARDANDO_BANCA"] } },
+        take: 3,
+        orderBy: { updatedAt: "asc" },
       });
-      semBanca.forEach(t => insights.push({
-        id: `coord-${t.id}`,
-        prioridade: "ALTA",
-        titulo: "Agendar Banca",
-        descricao: `"${t.titulo}" aguarda agendamento.`,
-        link: `/bancas/cadastrar?trabalhoId=${t.id}`,
-        tipo: "AGENDAMENTO"
-      }));
+      semBanca.forEach((t) =>
+        insights.push({
+          id: `coord-${t.id}`,
+          prioridade: "ALTA",
+          titulo: t.status === "AGUARDANDO_BANCA" ? "Agendar Banca" : "Aprovar para Banca",
+          descricao: `"${t.titulo}" aguarda ${t.status === "AGUARDANDO_BANCA" ? "agendamento da banca" : "encaminhamento para banca"}.`,
+          link:
+            t.status === "AGUARDANDO_BANCA"
+              ? `/bancas/cadastrar?trabalhoId=${t.id}`
+              : `/trabalhos/${t.id}`,
+          tipo: "AGENDAMENTO",
+        }),
+      );
     }
 
     const estatisticasPorCurso = await prisma.$queryRaw<

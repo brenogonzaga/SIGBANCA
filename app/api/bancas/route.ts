@@ -31,12 +31,13 @@ export const GET = withAuth(async (request: NextRequest, user) => {
 
     if (user.role === "ALUNO") {
       where.trabalho = { alunoId: user.userId };
-    } else if (user.role === "PROFESSOR" || user.role === "PROFESSOR_BANCA") {
-      where.membros = {
-        some: {
-          usuarioId: user.userId,
-        },
-      };
+    } else if (user.role === "PROFESSOR") {
+      where.OR = [
+        { membros: { some: { usuarioId: user.userId } } },
+        { trabalho: { orientadorId: user.userId } },
+      ];
+    } else if (user.role === "PROFESSOR_BANCA") {
+      where.membros = { some: { usuarioId: user.userId } };
     }
 
     const bancas = await prisma.banca.findMany({
@@ -81,7 +82,7 @@ export const GET = withAuth(async (request: NextRequest, user) => {
 
 export const POST = withAuth(async (request: NextRequest, user) => {
   try {
-    if (user.role !== "COORDENADOR" && user.role !== "ADMIN") {
+    if (user.role !== "COORDENADOR" && user.role !== "ADMIN" && user.role !== "PROFESSOR") {
       return NextResponse.json({ error: "Sem permissão para criar bancas" }, { status: 403 });
     }
 
@@ -92,19 +93,28 @@ export const POST = withAuth(async (request: NextRequest, user) => {
       where: { id: data.trabalhoId },
     });
 
+    // PROFESSOR só pode criar banca para trabalhos que orienta
+    if (user.role === "PROFESSOR" && trabalho?.orientadorId !== user.userId) {
+      return NextResponse.json(
+        { error: "Você só pode criar bancas para trabalhos que orienta" },
+        { status: 403 },
+      );
+    }
+
     if (!trabalho) {
       return NextResponse.json({ error: "Trabalho não encontrado" }, { status: 404 });
     }
 
     // Verificar se o trabalho está em um status que permite agendar banca
-    const statusPermitidos = ["APROVADO_ORIENTADOR", "AGUARDANDO_BANCA"];
-    if (!statusPermitidos.includes(trabalho.status)) {
+    // Professor pode pré-registrar membros a qualquer momento (exceto finais)
+    const statusBloqueados = ["APROVADO", "REPROVADO", "CANCELADO"];
+    if (statusBloqueados.includes(trabalho.status)) {
       return NextResponse.json(
         {
-          error: "O trabalho precisa estar aprovado pelo orientador para agendar banca",
+          error: "Não é possível agendar banca para um trabalho já concluído ou cancelado",
           statusAtual: trabalho.status,
         },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -118,7 +128,7 @@ export const POST = withAuth(async (request: NextRequest, user) => {
     if (bancaExistente) {
       return NextResponse.json(
         { error: "Já existe uma banca agendada para este trabalho" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -126,7 +136,7 @@ export const POST = withAuth(async (request: NextRequest, user) => {
     if (dataDate < new Date()) {
       return NextResponse.json(
         { error: "A data da banca deve ser no futuro" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -135,7 +145,20 @@ export const POST = withAuth(async (request: NextRequest, user) => {
     if (membroIds.length !== uniqueIds.size) {
       return NextResponse.json(
         { error: "Um mesmo membro não pode ser adicionado múltiplas vezes" },
-        { status: 400 }
+        { status: 400 },
+      );
+    }
+
+    // Validar estrutura da banca: obrigatório ter 1 ORIENTADOR e ao menos 1 AVALIADOR
+    const temOrientador = data.membros.some((m) => m.papel === "ORIENTADOR");
+    const avaliadores = data.membros.filter((m) => m.papel === "AVALIADOR");
+    if (!temOrientador) {
+      return NextResponse.json({ error: "A banca deve ter um orientador" }, { status: 400 });
+    }
+    if (avaliadores.length < 1) {
+      return NextResponse.json(
+        { error: "A banca deve ter pelo menos um professor avaliador" },
+        { status: 400 },
       );
     }
 
@@ -170,7 +193,7 @@ export const POST = withAuth(async (request: NextRequest, user) => {
           error: "Conflito de horário detectado",
           detalhes: `Os seguintes membros já possuem banca agendada neste dia: ${professoresComConflito}`,
         },
-        { status: 409 }
+        { status: 409 },
       );
     }
 
@@ -247,7 +270,7 @@ export const POST = withAuth(async (request: NextRequest, user) => {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.issues },
-        { status: 400 }
+        { status: 400 },
       );
     }
     console.error("Erro ao criar banca:", error);

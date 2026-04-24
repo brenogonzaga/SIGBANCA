@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { useRouter } from "next/navigation";
 import { Trabalho, PlataformaExterna, TipoDocumento, Comentario } from "@/app/types";
 import { Card, CardContent, CardHeader, CardTitle } from "../ui/Card";
 import { Badge } from "../ui/Badge";
@@ -16,7 +17,6 @@ import {
   Download,
   MessageSquare,
   ChevronDown,
-  ChevronUp,
   Clock,
   FileUp,
   X,
@@ -29,10 +29,6 @@ import {
   Users,
   Mail,
   CheckCircle,
-  Star,
-  Award,
-  Plus,
-  History,
   TrendingUp,
 } from "lucide-react";
 import { format } from "date-fns";
@@ -59,13 +55,17 @@ interface TrabalhoDetailProps {
 export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailProps) {
   const { token, usuario } = useAuth();
   const { showToast } = useToast();
+  const router = useRouter();
   const [versaoExpandida, setVersaoExpandida] = useState<string | null>(
-    trabalho.versoes[trabalho.versoes.length - 1]?.id || null
+    trabalho.versoes[trabalho.versoes.length - 1]?.id || null,
   );
   const [novoComentario, setNovoComentario] = useState<{ [key: string]: string }>({});
   const [isAddingComment, setIsAddingComment] = useState<{ [key: string]: boolean }>({});
   // Estado de edição de comentários
-  const [comentarioEditando, setComentarioEditando] = useState<{ id: string; texto: string } | null>(null);
+  const [comentarioEditando, setComentarioEditando] = useState<{
+    id: string;
+    texto: string;
+  } | null>(null);
   const [isSavingEdit, setIsSavingEdit] = useState(false);
   const [deletingComentarioId, setDeletingComentarioId] = useState<string | null>(null);
   // Estado de avaliação
@@ -73,19 +73,19 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
     nota: "",
     parecer: "",
   });
-  const [avaliacoes, setAvalocoes] = useState<Array<{
-    id: string;
-    membro: { id: string; nome: string; titulacao?: string; papel: string };
-    nota: number;
-    parecer: string;
-    dataAvaliacao: string;
-  }>>([]);
+  const [avaliacoes, setAvalocoes] = useState<
+    Array<{
+      id: string;
+      membro: { id: string; nome: string; titulacao?: string; papel: string };
+      nota: number;
+      parecer: string;
+      dataAvaliacao: string;
+    }>
+  >([]);
   const [isSubmittingAvaliacao, setIsSubmittingAvaliacao] = useState(false);
   const [jaAvaliou, setJaAvaliou] = useState(false);
 
-  const meuMembroId = trabalho.banca?.membros.find(
-    (m) => m.usuario.id === usuario?.id
-  )?.id;
+  const meuMembroId = trabalho.banca?.membros.find((m) => m.usuario.id === usuario?.id)?.id;
   const isMembro = !!meuMembroId;
   const bancaAtiva =
     trabalho.banca?.status === "AGENDADA" || trabalho.banca?.status === "EM_ANDAMENTO";
@@ -103,19 +103,20 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
     fetch(`/api/avaliacoes?bancaId=${trabalho.banca.id}`, {
       headers: { Authorization: `Bearer ${token}` },
     })
-      .then((r) => r.ok ? r.json() : null)
+      .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data) return;
         setAvalocoes(data.avaliacoes || []);
         if (isMembro) {
           const jaFez = data.avaliacoes?.some(
-            (a: { membro: { id: string } }) => a.membro.id === usuario?.id
+            (a: { membro: { id: string } }) => a.membro.id === usuario?.id,
           );
           setJaAvaliou(!!jaFez);
 
           // Preencher campos com avaliação existente se membro já avaliou
           const minhaAv = data.avaliacoes?.find(
-            (a: { membro: { id: string }; nota: number; parecer: string }) => a.membro.id === usuario?.id
+            (a: { membro: { id: string }; nota: number; parecer: string }) =>
+              a.membro.id === usuario?.id,
           );
           if (minhaAv) {
             setMinhaAvaliacao({ nota: String(minhaAv.nota), parecer: minhaAv.parecer });
@@ -137,10 +138,8 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
   const [uploadChangelog, setUploadChangelog] = useState("");
   const [isUploading, setIsUploading] = useState(false);
   const [downloadingId, setDownloadingId] = useState<string | null>(null);
-  const [isDeletingVersao, setIsDeletingVersao] = useState<string | null>(null);
   const [showTimeline, setShowTimeline] = useState(true);
-
-  const canEdit = usuario?.role === "ADMIN" || usuario?.id === trabalho.aluno.id;
+  const [isChangingStatus, setIsChangingStatus] = useState(false);
 
   const handleCloseUploadModal = () => {
     const hasFileData = uploadFile !== null;
@@ -179,7 +178,7 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
   const handleDownload = async (
     versaoId: string,
     nomeArquivo: string,
-    urlExternaVersao?: string
+    urlExternaVersao?: string,
   ) => {
     // Se for URL externa, abrir diretamente
     if (urlExternaVersao) {
@@ -447,11 +446,170 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
     return Math.round((bytes / Math.pow(k, i)) * 100) / 100 + " " + sizes[i];
   };
 
+  // Função para mudar status do trabalho
+  const handleChangeStatus = async (novoStatus: string) => {
+    if (!window.confirm(`Deseja alterar o status do trabalho para ${novoStatus}?`)) {
+      return;
+    }
+
+    setIsChangingStatus(true);
+    try {
+      const response = await fetch(`/api/trabalhos/${trabalho.id}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify({ status: novoStatus }),
+      });
+
+      if (response.ok) {
+        showToast("Status alterado com sucesso!", "success");
+        if (onUpdate) {
+          onUpdate();
+        }
+      } else {
+        const error = await response.json();
+        showToast(error.error || "Erro ao alterar status", "error");
+      }
+    } catch (error) {
+      console.error("Erro ao alterar status:", error);
+      showToast("Erro de conexão ao alterar status", "error");
+    } finally {
+      setIsChangingStatus(false);
+    }
+  };
+
+  // Define ações disponíveis baseadas no status atual e role do usuário
+  const getAvailableActions = () => {
+    const actions: Array<{
+      label: string;
+      status: string;
+      variant: "gradient" | "outline" | "danger";
+    }> = [];
+
+    if (!usuario) return actions;
+
+    const isOrientador = trabalho.orientador.id === usuario.id;
+    const isAluno = trabalho.aluno.id === usuario.id;
+    const isAdmin = usuario.role === "ADMIN" || usuario.role === "COORDENADOR";
+    const hasBanca =
+      !!trabalho.banca && trabalho.banca.membros && trabalho.banca.membros.length > 0;
+
+    switch (trabalho.status) {
+      case "EM_ELABORACAO":
+        if (isAluno || isAdmin) {
+          actions.push({
+            label: "Submeter para Revisão",
+            status: "SUBMETIDO",
+            variant: "gradient",
+          });
+        }
+        if (isAluno || isAdmin) {
+          actions.push({ label: "Cancelar Trabalho", status: "CANCELADO", variant: "danger" });
+        }
+        break;
+
+      case "SUBMETIDO":
+        if (isOrientador || isAdmin) {
+          actions.push({
+            label: "Aprovar",
+            status: "APROVADO_ORIENTADOR",
+            variant: "gradient",
+          });
+          actions.push({
+            label: "Solicitar Revisão",
+            status: "EM_REVISAO",
+            variant: "outline",
+          });
+        }
+        if (isAluno || isAdmin) {
+          actions.push({ label: "Cancelar", status: "CANCELADO", variant: "danger" });
+        }
+        break;
+
+      case "EM_REVISAO":
+        if (isAluno) {
+          actions.push({
+            label: "Reenviar para Análise",
+            status: "SUBMETIDO",
+            variant: "gradient",
+          });
+        }
+        if (isOrientador || isAdmin) {
+          actions.push({
+            label: "Aprovar",
+            status: "APROVADO_ORIENTADOR",
+            variant: "gradient",
+          });
+        }
+        if (isAluno || isAdmin) {
+          actions.push({ label: "Cancelar", status: "CANCELADO", variant: "danger" });
+        }
+        break;
+
+      case "APROVADO_ORIENTADOR":
+        if (isOrientador || isAdmin) {
+          actions.push({
+            label: "Encaminhar para Banca",
+            status: "AGUARDANDO_BANCA",
+            variant: "gradient",
+          });
+        }
+        if (isAdmin) {
+          actions.push({ label: "Cancelar", status: "CANCELADO", variant: "danger" });
+        }
+        break;
+
+      case "AGUARDANDO_BANCA":
+        if ((isOrientador || isAdmin) && hasBanca) {
+          actions.push({
+            label: "Confirmar Agendamento",
+            status: "BANCA_AGENDADA",
+            variant: "gradient",
+          });
+        }
+        if (isAdmin) {
+          actions.push({ label: "Reagendar", status: "AGUARDANDO_BANCA", variant: "outline" });
+          actions.push({ label: "Cancelar", status: "CANCELADO", variant: "danger" });
+        }
+        break;
+
+      case "BANCA_AGENDADA":
+        // Não permitir mudar status manualmente - o sistema calculará automaticamente
+        // após todas as avaliações serem enviadas (média >= 6 = APROVADO, < 6 = REPROVADO)
+        if (isAdmin || isOrientador) {
+          actions.push({ label: "Reagendar", status: "AGUARDANDO_BANCA", variant: "outline" });
+        }
+        if (isAdmin) {
+          actions.push({ label: "Cancelar", status: "CANCELADO", variant: "danger" });
+        }
+        break;
+
+      case "REPROVADO":
+        if (isAdmin) {
+          actions.push({ label: "Permitir Revisão", status: "EM_REVISAO", variant: "outline" });
+          actions.push({ label: "Reiniciar", status: "EM_ELABORACAO", variant: "outline" });
+        }
+        break;
+    }
+
+    return actions;
+  };
+
+  const availableActions = getAvailableActions();
+  const hasBanca =
+    !!trabalho.banca && trabalho.banca.membros && trabalho.banca.membros.length > 0;
+
   return (
     <div className="space-y-8 animate-fade-in relative">
       {/* Botão Voltar */}
       {onBack && (
-        <Button variant="ghost" onClick={onBack} className="text-[var(--muted)] hover:text-[var(--primary)] transition-all -ml-2 group">
+        <Button
+          variant="ghost"
+          onClick={onBack}
+          className="text-[var(--muted)] hover:text-[var(--primary)] transition-all -ml-2 group"
+        >
           <ArrowLeft className="w-4 h-4 mr-2 group-hover:-translate-x-1 transition-transform" />
           Voltar para listagem
         </Button>
@@ -464,10 +622,16 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
           <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
             <div className="flex-1 space-y-4">
               <div className="flex flex-wrap items-center gap-3">
-                <Badge variant="info" className="bg-[var(--primary-light)]/10 text-[var(--primary)] ring-1 ring-[var(--primary-light)] px-3 py-1 text-[10px] font-black uppercase tracking-widest">
+                <Badge
+                  variant="info"
+                  className="bg-[var(--primary-light)]/10 text-[var(--primary)] ring-1 ring-[var(--primary-light)] px-3 py-1 text-[10px] font-black uppercase tracking-widest"
+                >
                   {trabalho.curso}
                 </Badge>
-                <Badge variant="default" className="px-3 py-1 text-[10px] font-black uppercase tracking-widest bg-[var(--surface-light)] border border-[var(--border)]">
+                <Badge
+                  variant="default"
+                  className="px-3 py-1 text-[10px] font-black uppercase tracking-widest bg-[var(--surface-light)] border border-[var(--border)]"
+                >
                   {trabalho.status}
                 </Badge>
               </div>
@@ -480,8 +644,12 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
             </div>
             <div className="flex flex-col gap-2 min-w-[200px] animate-fade-in">
               <div className="p-6 rounded-[24px] bg-[var(--surface-light)]/50 backdrop-blur-sm border border-[var(--border)] text-center shadow-inner group-hover:shadow-md transition-all">
-                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-[0.2em] mb-2">Versão Atual</p>
-                <p className="text-4xl font-black text-[var(--primary)] tracking-tighter">{trabalho.versaoAtual}</p>
+                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-[0.2em] mb-2">
+                  Versão Atual
+                </p>
+                <p className="text-4xl font-black text-[var(--primary)] tracking-tighter">
+                  {trabalho.versaoAtual}
+                </p>
               </div>
             </div>
           </div>
@@ -493,8 +661,12 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                 <User className="w-6 h-6 text-[var(--primary)]" />
               </div>
               <div>
-                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">Aluno</p>
-                <p className="font-bold text-[var(--foreground)] text-sm">{trabalho.aluno.nome}</p>
+                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">
+                  Aluno
+                </p>
+                <p className="font-bold text-[var(--foreground)] text-sm">
+                  {trabalho.aluno.nome}
+                </p>
               </div>
             </div>
 
@@ -503,8 +675,12 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                 <User className="w-6 h-6 text-[var(--accent)]" />
               </div>
               <div>
-                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">Orientador</p>
-                <p className="font-bold text-[var(--foreground)] text-sm">{trabalho.orientador.nome}</p>
+                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">
+                  Orientador
+                </p>
+                <p className="font-bold text-[var(--foreground)] text-sm">
+                  {trabalho.orientador.nome}
+                </p>
               </div>
             </div>
 
@@ -513,8 +689,12 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                 <FileText className="w-6 h-6 text-indigo-500" />
               </div>
               <div>
-                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">Histórico</p>
-                <p className="font-bold text-[var(--foreground)] text-sm">{trabalho.versoes.length} submissões</p>
+                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">
+                  Histórico
+                </p>
+                <p className="font-bold text-[var(--foreground)] text-sm">
+                  {trabalho.versoes.length} submissões
+                </p>
               </div>
             </div>
 
@@ -523,7 +703,9 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                 <Calendar className="w-6 h-6 text-orange-500" />
               </div>
               <div>
-                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">Submetido em</p>
+                <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest">
+                  Submetido em
+                </p>
                 <p className="font-bold text-[var(--foreground)] text-sm">
                   {trabalho.dataCriacao
                     ? format(new Date(trabalho.dataCriacao), "dd MMM, yyyy", { locale: ptBR })
@@ -535,6 +717,55 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
         </CardContent>
       </Card>
 
+      {/* Ações de Status - Mostrar se houver ações disponíveis */}
+      {availableActions.length > 0 && (
+        <Card className="surface-card overflow-hidden border-l-4 border-l-[var(--primary)]">
+          <CardHeader className="p-6">
+            <div className="flex items-center gap-3">
+              <CheckCircle className="w-5 h-5 text-[var(--primary)]" />
+              <h3 className="text-lg font-black text-[var(--foreground)]">Ações Disponíveis</h3>
+            </div>
+          </CardHeader>
+          <CardContent className="p-6 pt-0">
+            <div className="flex flex-wrap gap-3">
+              {availableActions.map((action, index) => (
+                <Button
+                  key={index}
+                  variant={action.variant}
+                  onClick={() => handleChangeStatus(action.status)}
+                  disabled={isChangingStatus}
+                  className="rounded-xl"
+                >
+                  {isChangingStatus ? (
+                    <div className="w-4 h-4 border-2 border-current border-t-transparent rounded-full animate-spin mr-2" />
+                  ) : null}
+                  {action.label}
+                </Button>
+              ))}
+              {/* Botão de cadastrar banca quando status é AGUARDANDO_BANCA e sem banca criada */}
+              {trabalho.status === "AGUARDANDO_BANCA" &&
+                !hasBanca &&
+                (usuario?.id === trabalho.orientador.id ||
+                  usuario?.role === "ADMIN" ||
+                  usuario?.role === "COORDENADOR") && (
+                  <Button
+                    variant="gradient"
+                    className="rounded-xl"
+                    onClick={() => router.push(`/bancas/cadastrar?trabalhoId=${trabalho.id}`)}
+                  >
+                    <Users className="w-4 h-4 mr-2" />
+                    Cadastrar Banca
+                  </Button>
+                )}
+            </div>
+            <p className="text-xs text-[var(--muted)] mt-4 font-medium">
+              Status atual:{" "}
+              <span className="font-bold text-[var(--foreground)]">{trabalho.status}</span>
+            </p>
+          </CardContent>
+        </Card>
+      )}
+
       {/* Timeline de Evolução - Premium Highlight */}
       <Card className="surface-card overflow-hidden">
         <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-[var(--primary)] to-[#7C3AED] opacity-50"></div>
@@ -545,11 +776,15 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                 <TrendingUp className="w-6 h-6 text-[var(--primary)]" />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-[var(--foreground)] font-[Plus\ Jakarta\ Sans]">Timeline de Evolução</h3>
-                <p className="text-[var(--muted)] text-sm font-medium">Fluxo cronológico do trabalho acadêmico</p>
+                <h3 className="text-2xl font-black text-[var(--foreground)] font-[Plus\ Jakarta\ Sans]">
+                  Timeline de Evolução
+                </h3>
+                <p className="text-[var(--muted)] text-sm font-medium">
+                  Fluxo cronológico do trabalho acadêmico
+                </p>
               </div>
             </div>
-            <button 
+            <button
               onClick={() => setShowTimeline(!showTimeline)}
               className="px-4 py-2 bg-[var(--surface-light)] hover:bg-[var(--primary-light)]/20 text-[var(--muted)] hover:text-[var(--primary)] rounded-xl border border-[var(--border-light)] text-[10px] font-black uppercase tracking-widest transition-all"
             >
@@ -571,10 +806,17 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-6">
             <div className="flex items-center gap-4">
               <div className="w-2 h-8 bg-[var(--primary)] rounded-full"></div>
-              <h3 className="text-2xl font-black text-[var(--foreground)] font-[Plus\ Jakarta\ Sans]">Timeline de Versões</h3>
+              <h3 className="text-2xl font-black text-[var(--foreground)] font-[Plus\ Jakarta\ Sans]">
+                Timeline de Versões
+              </h3>
             </div>
             {canUpload && (
-              <Button variant="gradient" size="lg" onClick={() => setShowUploadModal(true)} className="px-8 rounded-2xl shadow-xl shadow-indigo-500/20 animate-scale-in">
+              <Button
+                variant="gradient"
+                size="lg"
+                onClick={() => setShowUploadModal(true)}
+                className="px-8 rounded-2xl shadow-xl shadow-indigo-500/20 animate-scale-in"
+              >
                 <FileUp className="w-5 h-5 mr-3" />
                 Submeter Versão
               </Button>
@@ -591,17 +833,14 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                 <div
                   key={versao.id}
                   className={`group relative overflow-hidden transition-all duration-500 rounded-[32px] border ${
-                    isExpanded 
-                      ? "ring-2 ring-[var(--primary-light)] border-transparent shadow-2xl bg-[var(--surface-light)]" 
+                    isExpanded
+                      ? "ring-2 ring-[var(--primary-light)] border-transparent shadow-2xl bg-[var(--surface-light)]"
                       : isLatest
                         ? "border-[var(--primary-light)] bg-[var(--primary-light)]/5 hover:bg-[var(--primary-light)]/10"
                         : "border-[var(--border)] bg-[var(--surface-light)]/50 hover:bg-[var(--surface-light)]"
                   }`}
                 >
-                  <div
-                    className="p-6 cursor-pointer"
-                    onClick={() => toggleVersao(versao.id)}
-                  >
+                  <div className="p-6 cursor-pointer" onClick={() => toggleVersao(versao.id)}>
                     <div className="flex items-center justify-between gap-4">
                       <div className="flex items-center gap-5 flex-1">
                         <div
@@ -620,30 +859,47 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
 
                         <div className="flex-1">
                           <div className="flex items-center gap-3 mb-1">
-                            <span className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-[0.2em]">Versão {versao.numeroVersao}</span>
-                            {isLatest && <Badge variant="info" className="text-[9px] font-black py-0.5 px-2">RECENTE</Badge>}
+                            <span className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-[0.2em]">
+                              Versão {versao.numeroVersao}
+                            </span>
+                            {isLatest && (
+                              <Badge
+                                variant="info"
+                                className="text-[9px] font-black py-0.5 px-2"
+                              >
+                                RECENTE
+                              </Badge>
+                            )}
                           </div>
                           <h4 className="text-lg font-bold text-[var(--foreground)] tracking-tight">
-                            {versao.nomeArquivo || versao.tituloDocumento || "Documento sem título"}
+                            {versao.nomeArquivo ||
+                              versao.tituloDocumento ||
+                              "Documento sem título"}
                           </h4>
-                          
+
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-2 mt-2 text-xs font-medium text-[var(--muted)]">
                             <span className="flex items-center gap-2 bg-[var(--background)]/50 px-3 py-1 rounded-full border border-[var(--border-light)]">
                               <Calendar className="w-3.5 h-3.5" />
-                              {format(new Date(versao.dataUpload), "dd MMM, yyyy", { locale: ptBR })}
+                              {format(new Date(versao.dataUpload), "dd MMM, yyyy", {
+                                locale: ptBR,
+                              })}
                             </span>
                             <span className="flex items-center gap-2 bg-[var(--background)]/50 px-3 py-1 rounded-full border border-[var(--border-light)]">
                               <User className="w-3.5 h-3.5" />
                               {versao.uploadPor?.nome || "Sistema"}
                             </span>
                             {versao.tamanho ? (
-                               <span className="bg-[var(--primary-light)]/10 text-[var(--primary)] px-2 py-0.5 rounded-lg font-black text-[10px]">
+                              <span className="bg-[var(--primary-light)]/10 text-[var(--primary)] px-2 py-0.5 rounded-lg font-black text-[10px]">
                                 {formatFileSize(versao.tamanho)}
-                               </span>
-                            ) : versao.plataforma && (
-                              <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-lg font-black text-[10px] uppercase">
-                                {PLATAFORMAS_OPTIONS.find((p) => p.value === versao.plataforma)?.label || versao.plataforma}
                               </span>
+                            ) : (
+                              versao.plataforma && (
+                                <span className="bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 px-2 py-0.5 rounded-lg font-black text-[10px] uppercase">
+                                  {PLATAFORMAS_OPTIONS.find(
+                                    (p) => p.value === versao.plataforma,
+                                  )?.label || versao.plataforma}
+                                </span>
+                              )
                             )}
                           </div>
                         </div>
@@ -659,7 +915,7 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                             handleDownload(
                               versao.id,
                               versao.nomeArquivo || versao.tituloDocumento || "documento",
-                              versao.urlExterna
+                              versao.urlExterna,
                             );
                           }}
                           disabled={downloadingId === versao.id}
@@ -672,7 +928,9 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                             <Download className="w-4 h-4" />
                           )}
                         </Button>
-                        <div className={`p-2 rounded-xl transition-all duration-300 ${isExpanded ? "bg-[var(--primary-light)] text-[var(--primary)] rotate-180" : "bg-[var(--background)] text-[var(--muted)]"}`}>
+                        <div
+                          className={`p-2 rounded-xl transition-all duration-300 ${isExpanded ? "bg-[var(--primary-light)] text-[var(--primary)] rotate-180" : "bg-[var(--background)] text-[var(--muted)]"}`}
+                        >
                           <ChevronDown className="w-5 h-5" />
                         </div>
                       </div>
@@ -685,7 +943,7 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                         <div className="bg-[var(--surface)] p-6 rounded-2xl border border-[var(--border)] relative overflow-hidden group/change">
                           <div className="absolute top-0 left-0 w-1 h-full bg-[var(--primary)] opacity-50"></div>
                           <h5 className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-3 flex items-center gap-2">
-                             <FileText className="w-3 h-3" /> Notas de Revisão
+                            <FileText className="w-3 h-3" /> Notas de Revisão
                           </h5>
                           <p className="text-sm text-[var(--foreground)] leading-relaxed font-semibold italic">
                             "{versao.changelog}"
@@ -698,9 +956,14 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                         <div className="flex items-center justify-between">
                           <h5 className="text-xl font-black text-[var(--foreground)] tracking-tight flex items-center gap-3">
                             <MessageSquare className="w-6 h-6 text-[var(--primary)]" />
-                            Anotações Acadêmicas  
+                            Anotações Acadêmicas
                             {versao.comentarios?.length > 0 && (
-                              <Badge variant="default" className="ml-2 bg-[var(--surface)] border border-[var(--border)] text-[var(--muted)]">{versao.comentarios.length}</Badge>
+                              <Badge
+                                variant="default"
+                                className="ml-2 bg-[var(--surface)] border border-[var(--border)] text-[var(--muted)]"
+                              >
+                                {versao.comentarios.length}
+                              </Badge>
                             )}
                           </h5>
                         </div>
@@ -711,8 +974,8 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                               <div
                                 key={comentario.id}
                                 className={`flex flex-col p-6 rounded-[24px] border transition-all duration-300 ${
-                                  comentario.autor.id === usuario?.id 
-                                    ? "bg-white dark:bg-[var(--surface)] border-[var(--border)] shadow-sm self-end max-w-[90%] ml-auto" 
+                                  comentario.autor.id === usuario?.id
+                                    ? "bg-white dark:bg-[var(--surface)] border-[var(--border)] shadow-sm self-end max-w-[90%] ml-auto"
                                     : "bg-[var(--surface-light)]/40 border-[var(--border-light)] max-w-[90%]"
                                 }`}
                               >
@@ -722,18 +985,31 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                                       {comentario.autor.nome.charAt(0).toUpperCase()}
                                     </div>
                                     <div>
-                                      <p className="font-bold text-xs text-[var(--foreground)]">{comentario.autor.nome}</p>
+                                      <p className="font-bold text-xs text-[var(--foreground)]">
+                                        {comentario.autor.nome}
+                                      </p>
                                       <p className="text-[10px] text-[var(--muted-light)] font-bold uppercase tracking-tighter">
-                                        {format(new Date(comentario.dataComentario), "dd MMM, HH:mm", { locale: ptBR })}
+                                        {format(
+                                          new Date(comentario.dataComentario),
+                                          "dd MMM, HH:mm",
+                                          { locale: ptBR },
+                                        )}
                                       </p>
                                     </div>
                                   </div>
 
-                                  {(comentario.autor.id === usuario?.id || usuario?.role === "ADMIN" || usuario?.role === "COORDENADOR") && (
+                                  {(comentario.autor.id === usuario?.id ||
+                                    usuario?.role === "ADMIN" ||
+                                    usuario?.role === "COORDENADOR") && (
                                     <div className="flex gap-2">
                                       {comentario.autor.id === usuario?.id && (
                                         <button
-                                          onClick={() => setComentarioEditando({ id: comentario.id, texto: comentario.texto })}
+                                          onClick={() =>
+                                            setComentarioEditando({
+                                              id: comentario.id,
+                                              texto: comentario.texto,
+                                            })
+                                          }
                                           className="p-1.5 text-[var(--muted)] hover:text-[var(--primary)] hover:bg-[var(--primary-light)]/20 rounded-lg transition-all"
                                         >
                                           <Edit className="w-3.5 h-3.5" />
@@ -754,15 +1030,32 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                                   <div className="space-y-3">
                                     <textarea
                                       value={comentarioEditando.texto}
-                                      onChange={(e) => setComentarioEditando({ ...comentarioEditando, texto: e.target.value })}
+                                      onChange={(e) =>
+                                        setComentarioEditando({
+                                          ...comentarioEditando,
+                                          texto: e.target.value,
+                                        })
+                                      }
                                       className="w-full p-4 bg-[var(--background)] border border-[var(--primary-light)] rounded-2xl focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10 text-sm font-medium resize-none"
                                       rows={3}
                                     />
                                     <div className="flex gap-2 justify-end">
-                                      <Button size="sm" variant="ghost" onClick={() => setComentarioEditando(null)} disabled={isSavingEdit} className="rounded-xl">
+                                      <Button
+                                        size="sm"
+                                        variant="ghost"
+                                        onClick={() => setComentarioEditando(null)}
+                                        disabled={isSavingEdit}
+                                        className="rounded-xl"
+                                      >
                                         Cancelar
                                       </Button>
-                                      <Button size="sm" variant="gradient" onClick={handleEditarComentario} disabled={isSavingEdit} className="rounded-xl">
+                                      <Button
+                                        size="sm"
+                                        variant="gradient"
+                                        onClick={handleEditarComentario}
+                                        disabled={isSavingEdit}
+                                        className="rounded-xl"
+                                      >
                                         {isSavingEdit ? "Salvando..." : "Salvar Alteração"}
                                       </Button>
                                     </div>
@@ -778,7 +1071,9 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                         ) : (
                           <div className="text-center py-8 bg-[var(--surface-light)]/20 rounded-2xl border border-dashed border-[var(--border)]">
                             <MessageSquare className="w-10 h-10 text-[var(--muted-light)] mx-auto mb-3 opacity-20" />
-                            <p className="text-sm text-[var(--muted)] font-medium">Nenhum comentário acadêmico ainda.</p>
+                            <p className="text-sm text-[var(--muted)] font-medium">
+                              Nenhum comentário acadêmico ainda.
+                            </p>
                           </div>
                         )}
 
@@ -789,14 +1084,22 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                               placeholder="Escreva sua análise técnica ou dúvida..."
                               className="w-full p-5 pr-32 bg-[var(--surface)] border border-[var(--border)] rounded-[24px] focus:outline-none focus:ring-4 focus:ring-[var(--primary)]/10 focus:border-[var(--primary-light)] text-sm font-medium shadow-sm group-hover/input:shadow-md transition-all resize-none min-h-[100px]"
                               value={novoComentario[versao.id] || ""}
-                              onChange={(e) => setNovoComentario({ ...novoComentario, [versao.id]: e.target.value })}
+                              onChange={(e) =>
+                                setNovoComentario({
+                                  ...novoComentario,
+                                  [versao.id]: e.target.value,
+                                })
+                              }
                             />
                             <div className="absolute right-3 bottom-3">
                               <Button
                                 size="md"
                                 variant="gradient"
                                 onClick={() => handleAddComment(versao.id)}
-                                disabled={isAddingComment[versao.id] || !novoComentario[versao.id]?.trim()}
+                                disabled={
+                                  isAddingComment[versao.id] ||
+                                  !novoComentario[versao.id]?.trim()
+                                }
                                 className="rounded-2xl shadow-lg shadow-indigo-500/10 px-6 py-5"
                               >
                                 {isAddingComment[versao.id] ? (
@@ -831,8 +1134,12 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                 <Users className="w-6 h-6 text-amber-500" />
               </div>
               <div>
-                <h3 className="text-2xl font-black text-[var(--foreground)] font-[Plus\ Jakarta\ Sans]">Detalhes da Defesa</h3>
-                <p className="text-[var(--muted)] text-sm font-medium">Informações logísticas e membros avaliadores</p>
+                <h3 className="text-2xl font-black text-[var(--foreground)] font-[Plus\ Jakarta\ Sans]">
+                  Detalhes da Defesa
+                </h3>
+                <p className="text-[var(--muted)] text-sm font-medium">
+                  Informações logísticas e membros avaliadores
+                </p>
               </div>
             </div>
           </CardHeader>
@@ -843,9 +1150,13 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                   <Calendar className="w-6 h-6 text-orange-500" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">Agendamento</p>
+                  <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">
+                    Agendamento
+                  </p>
                   <p className="font-bold text-[var(--foreground)] text-lg">
-                    {format(new Date(trabalho.banca.data), "dd 'de' MMMM, yyyy", { locale: ptBR })}
+                    {format(new Date(trabalho.banca.data), "dd 'de' MMMM, yyyy", {
+                      locale: ptBR,
+                    })}
                   </p>
                   <p className="text-sm font-medium text-[var(--muted)] flex items-center gap-2">
                     <Clock className="w-3.5 h-3.5" /> às {trabalho.banca.horario}
@@ -857,11 +1168,16 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                   <ExternalLink className="w-6 h-6 text-[var(--primary)]" />
                 </div>
                 <div>
-                  <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">Local / Link</p>
+                  <p className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest mb-1">
+                    Local / Link
+                  </p>
                   <p className="font-bold text-[var(--foreground)] text-lg truncate max-w-[250px]">
                     {trabalho.banca.local}
                   </p>
-                  <Badge variant="info" className="text-[9px] font-black uppercase tracking-widest mt-1 bg-[var(--primary-light)]/20 text-[var(--primary)]">
+                  <Badge
+                    variant="info"
+                    className="text-[9px] font-black uppercase tracking-widest mt-1 bg-[var(--primary-light)]/20 text-[var(--primary)]"
+                  >
                     Oficial
                   </Badge>
                 </div>
@@ -870,8 +1186,10 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
 
             <div>
               <div className="flex items-center gap-2 mb-6">
-                 <h4 className="text-sm font-black text-[var(--muted)] uppercase tracking-[0.2em]">Composição da Banca</h4>
-                 <div className="flex-1 h-px bg-[var(--border-light)]"></div>
+                <h4 className="text-sm font-black text-[var(--muted)] uppercase tracking-[0.2em]">
+                  Composição da Banca
+                </h4>
+                <div className="flex-1 h-px bg-[var(--border-light)]"></div>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
                 {trabalho.banca.membros.map((membro) => (
@@ -887,14 +1205,17 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                         <p className="font-black text-[var(--foreground)] text-base group-hover/membro:text-[var(--primary)] transition-colors line-clamp-1">
                           {membro.usuario.nome}
                         </p>
-                        <Badge variant="info" className="text-[8px] font-black py-0 px-2 uppercase tracking-tighter">
+                        <Badge
+                          variant="info"
+                          className="text-[8px] font-black py-0 px-2 uppercase tracking-tighter"
+                        >
                           {membro.papel}
                         </Badge>
                       </div>
                     </div>
                     <div className="pt-4 border-t border-[var(--border-light)] mt-auto">
                       <p className="text-[10px] font-bold text-[var(--muted-light)] uppercase tracking-tight flex items-center gap-2">
-                         <Mail className="w-3 h-3" /> {membro.usuario.email}
+                        <Mail className="w-3 h-3" /> {membro.usuario.email}
                       </p>
                     </div>
                   </div>
@@ -912,7 +1233,6 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
             <CardTitle>Avaliação da Banca</CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-
             {/* Formulário do membro: apenas se banca ativa e ainda não avaliou */}
             {isMembro && bancaAtiva && !jaAvaliou && (
               <div className="space-y-4">
@@ -929,7 +1249,9 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                     max="10"
                     step="0.1"
                     value={minhaAvaliacao.nota}
-                    onChange={(e) => setMinhaAvaliacao({ ...minhaAvaliacao, nota: e.target.value })}
+                    onChange={(e) =>
+                      setMinhaAvaliacao({ ...minhaAvaliacao, nota: e.target.value })
+                    }
                     className="w-32 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                     placeholder="Ex: 8.5"
                   />
@@ -941,7 +1263,9 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                   <textarea
                     rows={5}
                     value={minhaAvaliacao.parecer}
-                    onChange={(e) => setMinhaAvaliacao({ ...minhaAvaliacao, parecer: e.target.value })}
+                    onChange={(e) =>
+                      setMinhaAvaliacao({ ...minhaAvaliacao, parecer: e.target.value })
+                    }
                     placeholder="Escreva seu parecer sobre o trabalho..."
                     className="w-full px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-blue-500 dark:bg-gray-700 dark:text-white"
                   />
@@ -956,6 +1280,10 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                     }
                     if (!minhaAvaliacao.parecer.trim()) {
                       showToast("Parecer é obrigatório", "error");
+                      return;
+                    }
+                    if (minhaAvaliacao.parecer.trim().length < 20) {
+                      showToast("Parecer deve ter no mínimo 20 caracteres", "error");
                       return;
                     }
                     setIsSubmittingAvaliacao(true);
@@ -1023,7 +1351,8 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                     <div className="flex items-center justify-between">
                       <div>
                         <p className="font-semibold text-gray-900 dark:text-gray-100 text-sm">
-                          {av.membro.titulacao && `${av.membro.titulacao} `}{av.membro.nome}
+                          {av.membro.titulacao && `${av.membro.titulacao} `}
+                          {av.membro.nome}
                         </p>
                         <p className="text-xs text-gray-500 dark:text-gray-400">
                           {av.membro.papel.charAt(0) + av.membro.papel.slice(1).toLowerCase()}
@@ -1050,7 +1379,6 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                 Nenhuma avaliação registrada ainda.
               </p>
             )}
-
           </CardContent>
         </Card>
       )}
@@ -1065,13 +1393,15 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
             <div className="flex items-center justify-between relative z-10">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 rounded-2xl bg-[var(--primary-light)]/10 flex items-center justify-center text-[var(--primary)]">
-                   <FileUp className="w-6 h-6" />
+                  <FileUp className="w-6 h-6" />
                 </div>
                 <div>
                   <h3 className="text-2xl font-black text-[var(--foreground)] tracking-tight font-[Plus\ Jakarta\ Sans]">
                     Nova Submissão
                   </h3>
-                  <p className="text-sm text-[var(--muted)] font-medium">Versão {trabalho.versaoAtual + 1} para {trabalho.titulo}</p>
+                  <p className="text-sm text-[var(--muted)] font-medium">
+                    Versão {trabalho.versaoAtual + 1} para {trabalho.titulo}
+                  </p>
                 </div>
               </div>
               <button
@@ -1090,32 +1420,42 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                   type="button"
                   onClick={() => setTipoUpload("ARQUIVO")}
                   className={`flex flex-col items-center justify-center p-6 rounded-[32px] border-2 transition-all duration-500 gap-3 ${
-                    tipoUpload === "ARQUIVO" 
-                      ? "border-[var(--primary)] bg-[var(--primary-light)]/5 text-[var(--primary)] shadow-lg shadow-indigo-500/10" 
+                    tipoUpload === "ARQUIVO"
+                      ? "border-[var(--primary)] bg-[var(--primary-light)]/5 text-[var(--primary)] shadow-lg shadow-indigo-500/10"
                       : "border-[var(--border)] bg-[var(--surface-light)]/50 text-[var(--muted)] hover:border-[var(--primary-light)] hover:bg-[var(--surface-light)]"
                   }`}
                 >
-                  <FileText className={`w-8 h-8 ${tipoUpload === "ARQUIVO" ? "scale-110" : ""} transition-transform`} />
-                  <span className="text-xs font-black uppercase tracking-widest">Arquivo Local</span>
+                  <FileText
+                    className={`w-8 h-8 ${tipoUpload === "ARQUIVO" ? "scale-110" : ""} transition-transform`}
+                  />
+                  <span className="text-xs font-black uppercase tracking-widest">
+                    Arquivo Local
+                  </span>
                 </button>
                 <button
                   type="button"
                   onClick={() => setTipoUpload("URL_EXTERNA")}
                   className={`flex flex-col items-center justify-center p-6 rounded-[32px] border-2 transition-all duration-500 gap-3 ${
-                    tipoUpload === "URL_EXTERNA" 
-                      ? "border-[var(--primary)] bg-[var(--primary-light)]/5 text-[var(--primary)] shadow-lg shadow-indigo-500/10" 
+                    tipoUpload === "URL_EXTERNA"
+                      ? "border-[var(--primary)] bg-[var(--primary-light)]/5 text-[var(--primary)] shadow-lg shadow-indigo-500/10"
                       : "border-[var(--border)] bg-[var(--surface-light)]/50 text-[var(--muted)] hover:border-[var(--primary-light)] hover:bg-[var(--surface-light)]"
                   }`}
                 >
-                  <LinkIcon className={`w-8 h-8 ${tipoUpload === "URL_EXTERNA" ? "scale-110" : ""} transition-transform`} />
-                  <span className="text-xs font-black uppercase tracking-widest">Link Externo</span>
+                  <LinkIcon
+                    className={`w-8 h-8 ${tipoUpload === "URL_EXTERNA" ? "scale-110" : ""} transition-transform`}
+                  />
+                  <span className="text-xs font-black uppercase tracking-widest">
+                    Link Externo
+                  </span>
                 </button>
               </div>
 
               {/* Campos para ARQUIVO */}
               {tipoUpload === "ARQUIVO" && (
                 <div className="space-y-3 animate-in slide-in-from-bottom-2 duration-500">
-                  <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">Upload do Documento</label>
+                  <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">
+                    Upload do Documento
+                  </label>
                   <div className="relative group/file">
                     <input
                       type="file"
@@ -1130,7 +1470,9 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                             return;
                           }
                           const ext = file.name.split(".").pop()?.toLowerCase();
-                          const allowedExt = FILE_CONFIG.ALLOWED_EXTENSIONS.map((e) => e.replace(".", ""));
+                          const allowedExt = FILE_CONFIG.ALLOWED_EXTENSIONS.map((e) =>
+                            e.replace(".", ""),
+                          );
                           if (!ext || !allowedExt.includes(ext)) {
                             showToast(FILE_CONFIG.ERRORS.INVALID_TYPE, "error");
                             e.target.value = "";
@@ -1141,7 +1483,7 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                       }}
                       className="hidden"
                     />
-                    <label 
+                    <label
                       htmlFor="file-upload"
                       className="flex flex-col items-center justify-center w-full p-8 border border-dashed border-[var(--primary-light)] bg-[var(--primary-light)]/5 rounded-[32px] cursor-pointer hover:bg-[var(--primary-light)]/10 hover:border-[var(--primary)] transition-all group/label"
                     >
@@ -1151,15 +1493,23 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                             <Check className="w-6 h-6" />
                           </div>
                           <div className="text-left">
-                            <p className="font-bold text-[var(--foreground)] truncate max-w-[200px]">{uploadFile.name}</p>
-                            <p className="text-[10px] text-[var(--muted)]">{(uploadFile.size / 1024 / 1024).toFixed(2)} MB • PDF/Word</p>
+                            <p className="font-bold text-[var(--foreground)] truncate max-w-[200px]">
+                              {uploadFile.name}
+                            </p>
+                            <p className="text-[10px] text-[var(--muted)]">
+                              {(uploadFile.size / 1024 / 1024).toFixed(2)} MB • PDF/Word
+                            </p>
                           </div>
                         </div>
                       ) : (
                         <>
                           <Download className="w-10 h-10 text-[var(--primary-light)] mb-3 group-hover/label:scale-110 transition-transform" />
-                          <p className="text-sm font-bold text-[var(--foreground)]">Clique para selecionar</p>
-                          <p className="text-xs text-[var(--muted)] mt-1">PDF, DOC, DOCX até {FILE_CONFIG.MAX_SIZE_MB}MB</p>
+                          <p className="text-sm font-bold text-[var(--foreground)]">
+                            Clique para selecionar
+                          </p>
+                          <p className="text-xs text-[var(--muted)] mt-1">
+                            PDF, DOC, DOCX até {FILE_CONFIG.MAX_SIZE_MB}MB
+                          </p>
                         </>
                       )}
                     </label>
@@ -1171,7 +1521,9 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
               {tipoUpload === "URL_EXTERNA" && (
                 <div className="space-y-6 animate-in slide-in-from-bottom-2 duration-500">
                   <div className="space-y-3">
-                    <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">Link do Documento</label>
+                    <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">
+                      Link do Documento
+                    </label>
                     <input
                       type="url"
                       value={urlExterna}
@@ -1183,7 +1535,9 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
 
                   <div className="grid grid-cols-2 gap-6">
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">Plataforma</label>
+                      <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">
+                        Plataforma
+                      </label>
                       <select
                         value={plataforma}
                         onChange={(e) => setPlataforma(e.target.value as PlataformaExterna)}
@@ -1197,7 +1551,9 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                       </select>
                     </div>
                     <div className="space-y-3">
-                      <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">Título Amigável</label>
+                      <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">
+                        Título Amigável
+                      </label>
                       <input
                         type="text"
                         value={tituloDocumento}
@@ -1211,7 +1567,9 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
               )}
 
               <div className="space-y-3">
-                <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">Notas da Versão (Changelog)</label>
+                <label className="text-[10px] font-black text-[var(--muted-light)] uppercase tracking-widest block px-1">
+                  Notas da Versão (Changelog)
+                </label>
                 <textarea
                   value={uploadChangelog}
                   onChange={(e) => setUploadChangelog(e.target.value)}
@@ -1240,7 +1598,8 @@ export function TrabalhoDetail({ trabalho, onBack, onUpdate }: TrabalhoDetailPro
                 disabled={
                   isUploading ||
                   (tipoUpload === "ARQUIVO" && !uploadFile) ||
-                  (tipoUpload === "URL_EXTERNA" && (!urlExterna.trim() || !tituloDocumento.trim())) ||
+                  (tipoUpload === "URL_EXTERNA" &&
+                    (!urlExterna.trim() || !tituloDocumento.trim())) ||
                   !uploadChangelog.trim()
                 }
                 className="rounded-2xl px-12 shadow-2xl shadow-indigo-500/20 text-lg font-black"

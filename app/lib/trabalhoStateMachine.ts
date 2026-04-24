@@ -25,18 +25,18 @@ export type StatusTransition = {
 
 // Definição das transições válidas
 export const VALID_TRANSITIONS: StatusTransition[] = [
-  // Aluno submete trabalho
+  // Aluno submete trabalho (admin/coordenador também podem para testes/emergência)
   {
     from: "EM_ELABORACAO",
     to: "SUBMETIDO",
-    allowedRoles: ["ALUNO"],
+    allowedRoles: ["ALUNO", "ADMIN", "COORDENADOR"],
     allowsEditing: false,
   },
   // Orientador solicita revisão
   {
     from: "SUBMETIDO",
     to: "EM_REVISAO",
-    allowedRoles: ["PROFESSOR"],
+    allowedRoles: ["PROFESSOR", "ADMIN", "COORDENADOR"],
     allowsEditing: true,
   },
   // Orientador aprova diretamente
@@ -60,18 +60,18 @@ export const VALID_TRANSITIONS: StatusTransition[] = [
     allowedRoles: ["PROFESSOR"],
     allowsEditing: false,
   },
-  // Coordenador agenda banca
+  // Orientador ou coordenador encaminha para banca
   {
     from: "APROVADO_ORIENTADOR",
     to: "AGUARDANDO_BANCA",
-    allowedRoles: ["COORDENADOR", "ADMIN"],
+    allowedRoles: ["PROFESSOR", "COORDENADOR", "ADMIN"],
     allowsEditing: false,
   },
-  // Coordenador define membros e agenda
+  // Orientador ou coordenador confirma agendamento da banca
   {
     from: "AGUARDANDO_BANCA",
     to: "BANCA_AGENDADA",
-    allowedRoles: ["COORDENADOR", "ADMIN"],
+    allowedRoles: ["PROFESSOR", "COORDENADOR", "ADMIN"],
     requiresBanca: true,
     allowsEditing: false,
   },
@@ -79,14 +79,14 @@ export const VALID_TRANSITIONS: StatusTransition[] = [
   {
     from: "BANCA_AGENDADA",
     to: "APROVADO",
-    allowedRoles: ["COORDENADOR", "ADMIN", "PROFESSOR_BANCA"],
+    allowedRoles: ["COORDENADOR", "ADMIN", "PROFESSOR_BANCA", "PROFESSOR"],
     allowsEditing: false,
   },
   // Banca reprova
   {
     from: "BANCA_AGENDADA",
     to: "REPROVADO",
-    allowedRoles: ["COORDENADOR", "ADMIN", "PROFESSOR_BANCA"],
+    allowedRoles: ["COORDENADOR", "ADMIN", "PROFESSOR_BANCA", "PROFESSOR"],
     allowsEditing: false,
   },
   // Retorno de reprovado para elaboração (nova tentativa)
@@ -137,7 +137,7 @@ export const VALID_TRANSITIONS: StatusTransition[] = [
   {
     from: "BANCA_AGENDADA",
     to: "AGUARDANDO_BANCA",
-    allowedRoles: ["COORDENADOR", "ADMIN"],
+    allowedRoles: ["PROFESSOR", "COORDENADOR", "ADMIN"],
     allowsEditing: false,
   },
   // Banca reprova mas permite revisão (volta para elaboração direto)
@@ -162,7 +162,7 @@ export function canTransition(
   currentStatus: TrabalhoStatus,
   newStatus: TrabalhoStatus,
   userRole: UserRole,
-  hasBanca: boolean = false
+  hasBanca: boolean = false,
 ): { valid: boolean; error?: string } {
   // Não pode sair de estados finais
   if (FINAL_STATES.includes(currentStatus) && currentStatus !== "REPROVADO") {
@@ -179,7 +179,7 @@ export function canTransition(
 
   // Busca a transição válida
   const transition = VALID_TRANSITIONS.find(
-    (t) => t.from === currentStatus && t.to === newStatus
+    (t) => t.from === currentStatus && t.to === newStatus,
   );
 
   if (!transition) {
@@ -222,7 +222,7 @@ export function canUploadVersion(
   status: TrabalhoStatus,
   userRole: UserRole,
   isOwner: boolean,
-  isOrientador: boolean
+  isOrientador: boolean,
 ): { valid: boolean; error?: string } {
   // Admin e coordenador sempre podem
   if (userRole === "ADMIN" || userRole === "COORDENADOR") {
@@ -263,10 +263,10 @@ export function canUploadVersion(
  */
 export function getNextStates(
   currentStatus: TrabalhoStatus,
-  userRole: UserRole
+  userRole: UserRole,
 ): TrabalhoStatus[] {
   return VALID_TRANSITIONS.filter(
-    (t) => t.from === currentStatus && t.allowedRoles.includes(userRole)
+    (t) => t.from === currentStatus && t.allowedRoles.includes(userRole),
   ).map((t) => t.to);
 }
 

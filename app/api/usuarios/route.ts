@@ -30,18 +30,22 @@ export const GET = withAuth(async (request: NextRequest, user) => {
       if (role !== "PROFESSOR") {
         return NextResponse.json(
           { error: "Alunos só podem visualizar professores" },
-          { status: 403 }
+          { status: 403 },
         );
       }
       where.role = "PROFESSOR";
     } else if (user.role === "PROFESSOR") {
-      if (role !== "ALUNO") {
-        return NextResponse.json(
-          { error: "Professores só podem visualizar alunos" },
-          { status: 403 }
-        );
+      const rolesPermitidas = ["ALUNO", "PROFESSOR", "PROFESSOR_BANCA"];
+      const rolesRequest = role ? role.split(",").map((r) => r.trim()) : [];
+      const roleInvalida = rolesRequest.find((r) => !rolesPermitidas.includes(r));
+      if (roleInvalida || rolesRequest.length === 0) {
+        return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
       }
-      where.role = "ALUNO";
+      if (rolesRequest.length > 1) {
+        where.role = { in: rolesRequest as UserRole[] };
+      } else {
+        where.role = rolesRequest[0] as UserRole;
+      }
     } else if (user.role !== "ADMIN" && user.role !== "COORDENADOR") {
       return NextResponse.json({ error: "Acesso negado" }, { status: 403 });
     }

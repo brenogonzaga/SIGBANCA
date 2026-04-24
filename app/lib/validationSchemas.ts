@@ -149,16 +149,20 @@ export const createBancaSchema = z.object({
   horario: z.string().regex(/^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$/, "Horário inválido (HH:MM)"),
   local: z.string().min(3, "Local deve ter no mínimo 3 caracteres"),
   modalidade: z.enum(["PRESENCIAL", "REMOTO", "HIBRIDO"]),
-  linkReuniao: z.url("URL inválida").optional(),
+  // Aceita string vazia (modo presencial) ou uma URL válida
+  linkReuniao: z.preprocess(
+    (v) => (v === "" ? undefined : v),
+    z.string().url("URL inválida").optional(),
+  ),
   observacoes: z.string().max(1000, "Observações muito longas").optional(),
   membros: z
     .array(
       z.object({
         usuarioId: z.cuid("ID de usuário inválido"),
         papel: z.enum(PapelBanca),
-      })
+      }),
     )
-    .min(2, "A banca deve ter no mínimo 2 membros"),
+    .min(1, "A banca deve ter pelo menos um membro"),
 });
 
 export const updateBancaSchema = z.object({
@@ -187,16 +191,16 @@ export const addMembroBancaSchema = z.object({
 
 export const createAvaliacaoSchema = z.object({
   membroId: z.cuid("ID de membro inválido"),
-  nota: z.number().min(0, "Nota mínima é 0").max(10, "Nota máxima é 10"),
+  nota: z.coerce.number().min(0, "Nota mínima é 0").max(10, "Nota máxima é 10"),
   parecer: z.string().min(20, "Parecer deve ter no mínimo 20 caracteres"),
   criterios: z
     .array(
       z.object({
         nome: z.string().min(1, "Nome do critério é obrigatório"),
         descricao: z.string().optional(),
-        nota: z.number().min(0).max(10),
-        peso: z.number().min(0).max(1).default(1),
-      })
+        nota: z.coerce.number().min(0).max(10),
+        peso: z.coerce.number().min(0).max(1).default(1),
+      }),
     )
     .optional(),
 });
@@ -237,7 +241,7 @@ export const futureDate = z
       const d = typeof date === "string" ? new Date(date) : date;
       return d > new Date();
     },
-    { message: "Data deve ser futura" }
+    { message: "Data deve ser futura" },
   );
 
 /**

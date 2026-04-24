@@ -34,21 +34,21 @@ export const POST = withAuth(async (request: NextRequest, user) => {
     ) {
       return NextResponse.json(
         { error: "Você não tem permissão para criar esta avaliação" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
     if (membro.avaliacao) {
       return NextResponse.json(
         { error: "Este membro já realizou sua avaliação" },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
     if (membro.banca.status !== "AGENDADA" && membro.banca.status !== "EM_ANDAMENTO") {
       return NextResponse.json(
         { error: `Não é possível avaliar. Status da banca: ${membro.banca.status}` },
-        { status: 400 }
+        { status: 400 },
       );
     }
 
@@ -112,7 +112,52 @@ export const POST = withAuth(async (request: NextRequest, user) => {
       },
     });
 
-    if (avaliacoesCompletas + 1 >= totalMembros) {
+    // Se todas as avaliações foram concluídas, calcular média e resultado automaticamente.
+    // Requer ao menos 2 avaliações (orientador + 1 avaliador) para concluir.
+    const totalAvaliacoesAgora = avaliacoesCompletas + 1;
+    if (totalAvaliacoesAgora === totalMembros && totalMembros >= 2) {
+      // Buscar todas as avaliações incluindo a que acabou de ser criada
+      const todasAvaliacoes = await prisma.avaliacao.findMany({
+        where: {
+          membro: { bancaId: membro.banca.id },
+        },
+      });
+
+      // Calcular média final
+      const somaNotas = todasAvaliacoes.reduce((acc, av) => acc + av.nota, 0);
+      const mediaFinal = somaNotas / todasAvaliacoes.length;
+
+      // Determinar resultado baseado na média (>= 6 aprovado, < 6 reprovado)
+      let resultado: string;
+      let novoStatusTrabalho: string;
+      if (mediaFinal >= 6) {
+        resultado = "APROVADO";
+        novoStatusTrabalho = "APROVADO";
+      } else if (mediaFinal >= 5) {
+        resultado = "APROVADO_COM_RESSALVAS";
+        novoStatusTrabalho = "APROVADO";
+      } else {
+        resultado = "REPROVADO";
+        novoStatusTrabalho = "REPROVADO";
+      }
+
+      // Atualizar banca com nota final e resultado
+      await prisma.banca.update({
+        where: { id: membro.banca.id },
+        data: {
+          status: "REALIZADA",
+          notaFinal: mediaFinal,
+          resultado,
+        },
+      });
+
+      // Atualizar status do trabalho
+      await prisma.trabalho.update({
+        where: { id: membro.banca.trabalhoId },
+        data: { status: novoStatusTrabalho as "APROVADO" | "REPROVADO" },
+      });
+
+      // Notificar coordenadores, aluno e orientador sobre resultado
       const coordenadores = await prisma.usuario.findMany({
         where: {
           role: { in: ["COORDENADOR", "ADMIN"] },
@@ -120,15 +165,31 @@ export const POST = withAuth(async (request: NextRequest, user) => {
         },
       });
 
-      await prisma.notificacao.createMany({
-        data: coordenadores.map((coord) => ({
+      const notificacoes = [
+        ...coordenadores.map((coord) => ({
           usuarioId: coord.id,
-          tipo: "AVALIACOES_COMPLETAS",
-          titulo: "Todas as avaliações foram enviadas",
-          mensagem: `Todas as avaliações da banca do trabalho "${membro.banca.trabalho.titulo}" foram enviadas. Registre o resultado final.`,
+          tipo: "RESULTADO_BANCA",
+          titulo: "Resultado da banca calculado",
+          mensagem: `A banca do trabalho "${membro.banca.trabalho.titulo}" foi concluída. Média: ${mediaFinal.toFixed(1)} - ${resultado}`,
           link: `/bancas/${membro.banca.id}`,
         })),
-      });
+        {
+          usuarioId: membro.banca.trabalho.alunoId,
+          tipo: "RESULTADO_BANCA",
+          titulo: "Resultado da sua defesa",
+          mensagem: `Sua banca foi concluída com média ${mediaFinal.toFixed(1)} - ${resultado}`,
+          link: `/trabalhos/${membro.banca.trabalhoId}`,
+        },
+        {
+          usuarioId: membro.banca.trabalho.orientadorId,
+          tipo: "RESULTADO_BANCA",
+          titulo: "Resultado da banca do orientando",
+          mensagem: `A banca do trabalho "${membro.banca.trabalho.titulo}" foi concluída com média ${mediaFinal.toFixed(1)} - ${resultado}`,
+          link: `/trabalhos/${membro.banca.trabalhoId}`,
+        },
+      ];
+
+      await prisma.notificacao.createMany({ data: notificacoes });
     }
 
     return NextResponse.json(
@@ -136,20 +197,19 @@ export const POST = withAuth(async (request: NextRequest, user) => {
         message: "Avaliação criada com sucesso",
         avaliacao,
       },
-      { status: 201 }
+      { status: 201 },
     );
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
         { error: "Dados inválidos", details: error.issues },
-        { status: 400 }
+        { status: 400 },
       );
     }
     console.error("Erro ao criar avaliação:", error);
     return NextResponse.json({ error: "Erro ao criar avaliação" }, { status: 500 });
   }
 });
-
 
 export const GET = withAuth(async (request: NextRequest, user) => {
   try {
@@ -189,7 +249,7 @@ export const GET = withAuth(async (request: NextRequest, user) => {
     if (!isMembro && !isAdmin && !isAluno && !isOrientador) {
       return NextResponse.json(
         { error: "Você não tem permissão para visualizar estas avaliações" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
@@ -197,7 +257,7 @@ export const GET = withAuth(async (request: NextRequest, user) => {
     if ((isAluno || isOrientador) && banca.status !== "REALIZADA") {
       return NextResponse.json(
         { error: "Avaliações só ficam disponíveis após a realização da banca" },
-        { status: 403 }
+        { status: 403 },
       );
     }
 
