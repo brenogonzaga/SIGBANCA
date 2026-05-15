@@ -50,11 +50,19 @@ export function BancaList({ initialBancas, hideHeader = false }: BancaListProps)
   const { showToast } = useToast();
   const [bancas, setBancas] = useState<Banca[]>(initialBancas || []);
   const [isLoading, setIsLoading] = useState(!initialBancas);
+  const [filterStatus, setFilterStatus] = useState<string>("TODAS");
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [bancaToDelete, setBancaToDelete] = useState<{
     id: string;
     titulo: string;
   } | null>(null);
+
+  const filteredBancas = bancas.filter((b) => {
+    if (filterStatus === "TODAS") return true;
+    if (filterStatus === "CONCLUIDAS") return b.status === "REALIZADA";
+    if (filterStatus === "AGENDADAS") return b.status === "AGENDADA" || b.status === "EM_ANDAMENTO";
+    return true;
+  });
 
   const canCreate = usuario?.role === "COORDENADOR" || usuario?.role === "ADMIN";
 
@@ -197,9 +205,30 @@ export function BancaList({ initialBancas, hideHeader = false }: BancaListProps)
         </div>
       )}
 
+      {/* Filters Section */}
+      <div className="flex gap-2 p-1.5 bg-[var(--surface)] border border-[var(--border)] rounded-2xl w-fit">
+        {[
+          { id: "TODAS", label: "Todas" },
+          { id: "AGENDADAS", label: "Agendadas" },
+          { id: "CONCLUIDAS", label: "Concluídas" }
+        ].map((tab) => (
+          <button
+            key={tab.id}
+            onClick={() => setFilterStatus(tab.id)}
+            className={`px-6 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-[0.1em] transition-all ${
+              filterStatus === tab.id 
+                ? "bg-[var(--foreground)] text-white shadow-lg" 
+                : "text-[var(--muted)] hover:bg-[var(--surface-light)]"
+            }`}
+          >
+            {tab.label}
+          </button>
+        ))}
+      </div>
+
       {/* Grid of Bancas - Bento Layout */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        {bancas.length === 0 ? (
+        {filteredBancas.length === 0 ? (
           <div className="lg:col-span-2 py-20 bg-[var(--surface)] rounded-[40px] border border-[var(--border)] flex flex-col items-center justify-center text-center">
             <div className="w-20 h-20 rounded-3xl bg-[var(--surface-light)] flex items-center justify-center text-[var(--muted-light)] mb-6">
               <Calendar className="w-10 h-10" />
@@ -208,10 +237,11 @@ export function BancaList({ initialBancas, hideHeader = false }: BancaListProps)
             <p className="text-[var(--muted)] font-medium">Os agendamentos futuros aparecerão aqui.</p>
           </div>
         ) : (
-          bancas.map((banca) => (
-            <div 
+          filteredBancas.map((banca) => (
+            <Link 
               key={banca.id} 
-              className="group bg-[var(--surface)] hover:bg-[var(--surface-light)] rounded-[40px] border border-[var(--border)] transition-all duration-500 hover:shadow-2xl hover:shadow-[var(--primary)]/5 hover:-translate-y-2 overflow-hidden flex flex-col"
+              href={`/bancas/${banca.id}`}
+              className="group bg-[var(--surface)] hover:bg-[var(--surface-light)] rounded-[40px] border border-[var(--border)] transition-all duration-500 hover:shadow-2xl hover:shadow-[var(--primary)]/5 hover:-translate-y-2 overflow-hidden flex flex-col cursor-pointer"
             >
               <div className="p-8 flex-1">
                 <div className="flex justify-between items-start mb-6">
@@ -335,7 +365,7 @@ export function BancaList({ initialBancas, hideHeader = false }: BancaListProps)
                   <span className="text-[10px] font-black text-[var(--muted-light)] tracking-widest uppercase">ID: {banca.id.slice(-6)}</span>
                   <div className={`w-2 h-2 rounded-full ${banca.status === 'REALIZADA' ? 'bg-emerald-500 shadow-[0_0_10px_rgba(16,185,129,0.5)]' : 'bg-amber-400'}`}></div>
               </div>
-            </div>
+            </Link>
           ))
         )}
       </div>

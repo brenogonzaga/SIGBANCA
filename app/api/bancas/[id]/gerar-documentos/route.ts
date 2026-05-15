@@ -77,7 +77,7 @@ export const POST = withAuthContext<{ params: Promise<{ id: string }> }>(
       const ataElement = React.createElement(AtaDefesa, { dados: dadosComuns });
       const ataBuffer = await renderToBuffer(ataElement);
       const ataPath = `bancas/${id}/ata_defesa_${Date.now()}.pdf`;
-      const ataUrl = await uploadFile(ataPath, ataBuffer);
+      const { url: ataUrl } = await uploadFile(ataBuffer, ataPath);
 
       // 4. Gerar Folha de Aprovação
       const folhaElement = React.createElement(FolhaAprovacao, { 
@@ -90,7 +90,7 @@ export const POST = withAuthContext<{ params: Promise<{ id: string }> }>(
       });
       const folhaBuffer = await renderToBuffer(folhaElement);
       const folhaPath = `bancas/${id}/folha_aprovacao_${Date.now()}.pdf`;
-      const folhaUrl = await uploadFile(folhaPath, folhaBuffer);
+      const { url: folhaUrl } = await uploadFile(folhaBuffer, folhaPath);
 
       // 5. Atualizar Banca com as URLs
       const bancaAtualizada = await prisma.banca.update({

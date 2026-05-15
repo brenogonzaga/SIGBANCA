@@ -44,6 +44,9 @@ export const PATCH = withAuthContext<{ params: Promise<{ id: string }> }>(
       const observacoes = formData.get("observacoes") as string;
       const arquivoRetorno = formData.get("arquivoRetorno") as File;
 
+      console.log(`[Protocolo PATCH] Processando ID: ${id}`);
+      console.log(`[Protocolo PATCH] Novo Status: ${status}, Responsável: ${user.userId}`);
+
       const protocoloExistente = await prisma.protocolo.findUnique({
         where: { id }
       });
@@ -58,12 +61,16 @@ export const PATCH = withAuthContext<{ params: Promise<{ id: string }> }>(
         return NextResponse.json({ error: "Sem permissão para processar protocolos" }, { status: 403 });
       }
 
-      let arquivoRetornoUrl = undefined;
-      if (arquivoRetorno) {
-        const buffer = Buffer.from(await arquivoRetorno.arrayBuffer());
+      let arquivoRetornoUrl = formData.get("arquivoRetornoUrl") as string || undefined;
+      
+      if (arquivoRetorno && arquivoRetorno.size > 0) {
+        console.log(`[Protocolo PATCH] Fazendo upload de arquivo de retorno: ${arquivoRetorno.name}`);
         const path = `protocolos/retorno/${id}_${Date.now()}_${arquivoRetorno.name}`;
-        arquivoRetornoUrl = await uploadFile(path, buffer);
+        const { url } = await uploadFile(arquivoRetorno, path);
+        arquivoRetornoUrl = url;
       }
+
+      const dataFechamento = (status === "DEFERIDO" || status === "INDEFERIDO") ? new Date() : undefined;
 
       const protocolo = await prisma.protocolo.update({
         where: { id },
@@ -72,10 +79,12 @@ export const PATCH = withAuthContext<{ params: Promise<{ id: string }> }>(
           observacoes: observacoes || undefined,
           arquivoRetornoUrl,
           responsavelId: user.userId,
-          dataFechamento: (status === "DEFERIDO" || status === "INDEFERIDO") ? new Date() : undefined,
+          dataFechamento,
         },
         include: { aluno: true }
       });
+
+      console.log(`[Protocolo PATCH] Protocolo atualizado com sucesso para status: ${protocolo.status}`);
 
       // Notificar o aluno
       await prisma.notificacao.create({
@@ -89,9 +98,9 @@ export const PATCH = withAuthContext<{ params: Promise<{ id: string }> }>(
       });
 
       return NextResponse.json(protocolo);
-    } catch (error) {
-      console.error("Erro ao atualizar protocolo:", error);
-      return NextResponse.json({ error: "Erro ao atualizar protocolo" }, { status: 500 });
+    } catch (error: any) {
+      console.error("[Protocolo PATCH] Erro crítico:", error);
+      return NextResponse.json({ error: error.message || "Erro ao atualizar protocolo" }, { status: 500 });
     }
   }
 );

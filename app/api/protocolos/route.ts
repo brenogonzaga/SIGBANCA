@@ -81,9 +81,9 @@ export const POST = withAuthContext(async (request, user) => {
 
     let arquivoEnviadoUrl = null;
     if (arquivo) {
-      const buffer = Buffer.from(await arquivo.arrayBuffer());
       const path = `protocolos/${user.userId}/${Date.now()}_${arquivo.name}`;
-      arquivoEnviadoUrl = await uploadFile(path, buffer);
+      const { url } = await uploadFile(arquivo, path);
+      arquivoEnviadoUrl = url;
     }
 
     const protocolo = await prisma.protocolo.create({

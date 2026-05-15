@@ -37,15 +37,15 @@ export async function ensureBucketExists() {
 }
 
 export async function uploadFile(
-  file: File,
+  data: File | Buffer,
   path: string
 ): Promise<{ url: string; size: number }> {
   await ensureBucketExists();
 
-  const buffer = Buffer.from(await file.arrayBuffer());
+  const buffer = data instanceof Buffer ? data : Buffer.from(await data.arrayBuffer());
 
   await minioClient.putObject(BUCKET_NAME, path, buffer, buffer.length, {
-    "Content-Type": file.type || "application/octet-stream",
+    "Content-Type": (data instanceof Buffer ? "application/pdf" : data.type) || "application/octet-stream",
   });
 
   const url = `${MINIO_PUBLIC_URL}/${BUCKET_NAME}/${path}`;

@@ -111,7 +111,7 @@ export function ProtocoloForm({ onClose, onSuccess }: ProtocoloFormProps) {
               <select
                 className="w-full bg-[var(--surface-light)]/50 border border-[var(--border-light)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--foreground)] focus:ring-2 focus:ring-[var(--primary)] transition-all outline-none"
                 value={formData.tipo}
-                onChange={(e) => setFormData({ ...prev => ({ ...prev, tipo: e.target.value }) })}
+                onChange={(e) => setFormData(prev => ({ ...prev, tipo: e.target.value as any }))}
               >
                 <option value="FICHA_CATALOGRAFICA">Ficha Catalográfica (TCC Final)</option>
                 <option value="NADA_CONSTA">Certidão de Nada Consta (Biblioteca)</option>
@@ -127,7 +127,7 @@ export function ProtocoloForm({ onClose, onSuccess }: ProtocoloFormProps) {
                 <select
                   className="w-full bg-[var(--surface-light)]/50 border border-[var(--border-light)] rounded-xl px-4 py-3 text-sm font-bold text-[var(--foreground)] focus:ring-2 focus:ring-[var(--primary)] transition-all outline-none"
                   value={formData.trabalhoId}
-                  onChange={(e) => setFormData({ ...prev => ({ ...prev, trabalhoId: e.target.value }) })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, trabalhoId: e.target.value }))}
                 >
                   {trabalhos.map(t => (
                     <option key={t.id} value={t.id}>{t.titulo}</option>
@@ -143,7 +143,7 @@ export function ProtocoloForm({ onClose, onSuccess }: ProtocoloFormProps) {
                 <input
                   type="file"
                   accept=".pdf"
-                  onChange={(e) => setFormData({ ...prev => ({ ...prev, arquivo: e.target.files?.[0] || null }) })}
+                  onChange={(e) => setFormData(prev => ({ ...prev, arquivo: e.target.files?.[0] || null }))}
                   className="hidden"
                   id="file-upload"
                 />
@@ -170,7 +170,7 @@ export function ProtocoloForm({ onClose, onSuccess }: ProtocoloFormProps) {
                 className="w-full bg-[var(--surface-light)]/50 border border-[var(--border-light)] rounded-xl px-4 py-3 text-sm font-medium text-[var(--foreground)] focus:ring-2 focus:ring-[var(--primary)] transition-all outline-none h-24 resize-none"
                 placeholder="Ex: Urgência para colação de grau, correções específicas, etc."
                 value={formData.observacoes}
-                onChange={(e) => setFormData({ ...prev => ({ ...prev, observacoes: e.target.value }) })}
+                onChange={(e) => setFormData(prev => ({ ...prev, observacoes: e.target.value }))}
               />
             </div>
 

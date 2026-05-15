@@ -18,6 +18,8 @@ import {
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
 
+import { ProtocoloProcessModal } from "./ProtocoloProcessModal";
+
 interface ProtocoloListProps {
   onRefresh?: () => void;
 }
@@ -27,6 +29,7 @@ export function ProtocoloList({ onRefresh }: ProtocoloListProps) {
   const [protocolos, setProtocolos] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState("TODOS");
+  const [selectedProtocolo, setSelectedProtocolo] = useState<any | null>(null);
 
   const fetchProtocolos = async () => {
     if (!token) return;
@@ -50,6 +53,11 @@ export function ProtocoloList({ onRefresh }: ProtocoloListProps) {
   useEffect(() => {
     fetchProtocolos();
   }, [token, filter]);
+
+  const handleRefresh = () => {
+    fetchProtocolos();
+    if (onRefresh) onRefresh();
+  };
 
   const getStatusBadge = (status: string) => {
     switch (status) {
@@ -175,7 +183,7 @@ export function ProtocoloList({ onRefresh }: ProtocoloListProps) {
                         variant="info" 
                         size="sm" 
                         className="rounded-xl px-4 h-10"
-                        onClick={() => {/* Abrir modal de processamento */}}
+                        onClick={() => setSelectedProtocolo(p)}
                       >
                         Processar
                       </Button>
@@ -192,6 +200,14 @@ export function ProtocoloList({ onRefresh }: ProtocoloListProps) {
             </Card>
           ))}
         </div>
+      )}
+
+      {selectedProtocolo && (
+        <ProtocoloProcessModal 
+          protocolo={selectedProtocolo}
+          onClose={() => setSelectedProtocolo(null)}
+          onSuccess={handleRefresh}
+        />
       )}
     </div>
   );

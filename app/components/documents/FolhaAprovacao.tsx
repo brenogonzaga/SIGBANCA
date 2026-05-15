@@ -3,57 +3,73 @@ import { Page, Text, View, Document, StyleSheet } from '@react-pdf/renderer';
 
 const styles = StyleSheet.create({
   page: {
-    padding: 60,
+    padding: 70,
     fontSize: 12,
     fontFamily: 'Helvetica',
-    lineHeight: 1.5,
-  },
-  header: {
-    marginTop: 40,
-    marginBottom: 40,
-    alignItems: 'center',
+    lineHeight: 1.6,
   },
   aluno: {
-    fontSize: 14,
+    fontSize: 12,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 80,
+    textTransform: 'uppercase',
+  },
+  titulo: {
+    fontSize: 13,
     fontWeight: 'bold',
     textAlign: 'center',
     marginBottom: 60,
-  },
-  titulo: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    textAlign: 'center',
-    marginBottom: 40,
     textTransform: 'uppercase',
   },
   natureza: {
-    marginLeft: '50%',
+    marginLeft: '45%',
     textAlign: 'justify',
     fontSize: 11,
-    marginBottom: 40,
+    marginBottom: 50,
   },
   aprovacao: {
-    textAlign: 'center',
+    textAlign: 'left',
     marginBottom: 30,
+    marginTop: 20,
+    fontSize: 11,
+  },
+  bancaTitle: {
+    textAlign: 'center',
+    fontWeight: 'bold',
+    fontSize: 11,
+    marginBottom: 40,
+    textTransform: 'uppercase',
   },
   signatureSection: {
-    marginTop: 40,
+    marginTop: 20,
+  },
+  signatureBlock: {
+    marginBottom: 30,
+    alignItems: 'center',
   },
   signatureLine: {
     borderTopWidth: 1,
     borderTopColor: '#000',
     width: '80%',
-    marginTop: 40,
-    alignSelf: 'center',
+    marginBottom: 5,
   },
   signatureName: {
     textAlign: 'center',
     fontSize: 11,
-    marginTop: 5,
+    fontWeight: 'bold',
   },
-  data: {
+  signatureInst: {
     textAlign: 'center',
-    marginTop: 60,
+    fontSize: 10,
+  },
+  footer: {
+    position: 'absolute',
+    bottom: 30,
+    left: 70,
+    right: 70,
+    fontSize: 8,
+    textAlign: 'right',
   }
 });
 
@@ -63,6 +79,7 @@ interface FolhaAprovacaoProps {
     titulo: string;
     curso: string;
     instituicao: string;
+    campus: string;
     dataDefesa: string;
     membros: {
       nome: string;
@@ -81,28 +98,29 @@ export const FolhaAprovacao: React.FC<FolhaAprovacaoProps> = ({ dados }) => (
 
       <View style={styles.natureza}>
         <Text>
-          Trabalho de Conclusão de Curso apresentado ao curso de {dados.curso} do {dados.instituicao}, como requisito parcial para obtenção do título de Bacharel/Técnico em {dados.curso}.
+          Trabalho de Conclusão de Curso apresentado à banca examinadora Curso Superior de Tecnologia em {dados.curso} do {dados.instituicao} – {dados.campus}, como requisito para o cumprimento da disciplina TCC II – Projeto de Software.
         </Text>
+        <Text style={{ marginTop: 10 }}>Orientador: {dados.membros.find(m => m.papel === 'ORIENTADOR')?.nome || 'A definir'}</Text>
       </View>
 
-      <Text style={styles.aprovacao}>Aprovado em: {dados.dataDefesa}</Text>
+      <Text style={styles.aprovacao}>
+        Aprovado em ________ de ________________ de {new Date().getFullYear()}
+      </Text>
 
-      <Text style={{ textAlign: 'center', fontWeight: 'bold' }}>BANCA EXAMINADORA</Text>
+      <Text style={styles.bancaTitle}>BANCA EXAMINADORA</Text>
 
       <View style={styles.signatureSection}>
         {dados.membros.map((membro, index) => (
-          <View key={index}>
+          <View key={index} style={styles.signatureBlock}>
             <View style={styles.signatureLine} />
             <Text style={styles.signatureName}>{membro.nome}</Text>
-            <Text style={styles.signatureName}>{membro.instituicao}</Text>
-            <Text style={styles.signatureName}>{membro.papel}</Text>
+            <Text style={styles.signatureInst}>{membro.instituicao}</Text>
           </View>
         ))}
       </View>
 
-      <View style={styles.data}>
-        <Text>Manaus - AM</Text>
-        <Text>{new Date().getFullYear()}</Text>
+      <View style={styles.footer}>
+        <Text>EMAIL nº 403/2024 PROT/CMC (1420080) 23042.001104/2024-26 pg. 7</Text>
       </View>
     </Page>
   </Document>
