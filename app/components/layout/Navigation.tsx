@@ -14,7 +14,8 @@ import {
   Search,
   Globe,
   BarChart3,
-  BellRing
+  BellRing,
+  ClipboardList
 } from "lucide-react";
 import { NotificationBell } from "./NotificationBell";
 import { useState } from "react";
@@ -25,8 +26,8 @@ import { Logo } from "@/app/components/ui/Logo";
 import { Badge } from "@/app/components/ui/Badge";
 
 interface NavigationProps {
-  activeView?: "dashboard" | "trabalhos" | "bancas" | "usuarios";
-  onViewChange?: (view: "dashboard" | "trabalhos" | "bancas" | "usuarios") => void;
+  activeView?: "dashboard" | "trabalhos" | "bancas" | "usuarios" | "protocolos";
+  onViewChange?: (view: "dashboard" | "trabalhos" | "bancas" | "usuarios" | "protocolos") => void;
 }
 
 const roleLabels: Record<string, string> = {
@@ -34,6 +35,7 @@ const roleLabels: Record<string, string> = {
   PROFESSOR: "Professor",
   COORDENADOR: "Coordenador",
   PROFESSOR_BANCA: "Avaliador",
+  BIBLIOTECARIO: "Bibliotecário",
   ADMIN: "Administrador",
 };
 
@@ -45,6 +47,7 @@ const roleVariants: Record<
   PROFESSOR: "success",
   COORDENADOR: "purple",
   PROFESSOR_BANCA: "warning",
+  BIBLIOTECARIO: "purple",
   ADMIN: "danger",
 };
 
@@ -74,6 +77,12 @@ export function Navigation({ activeView, onViewChange }: NavigationProps = {}) {
       roles: ["ALUNO", "PROFESSOR", "COORDENADOR", "PROFESSOR_BANCA", "ADMIN"] as const,
     },
     {
+      id: "protocolos" as const,
+      label: "Protocolos",
+      icon: ClipboardList,
+      roles: ["ALUNO", "BIBLIOTECARIO", "COORDENADOR", "ADMIN"] as const,
+    },
+    {
       id: "usuarios" as const,
       label: "Usuários",
       icon: Users,
@@ -90,7 +99,7 @@ export function Navigation({ activeView, onViewChange }: NavigationProps = {}) {
     router.push("/login");
   };
 
-  const handleViewChange = (view: "dashboard" | "trabalhos" | "bancas" | "usuarios") => {
+  const handleViewChange = (view: "dashboard" | "trabalhos" | "bancas" | "usuarios" | "protocolos") => {
     setMobileMenuOpen(false);
     router.push(view === "dashboard" ? "/dashboard" : `/${view}`);
     if (onViewChange) {

@@ -12,7 +12,22 @@ enum UserRole {
     PROFESSOR // Professor que pode orientar
     COORDENADOR // Coordenador de curso
     PROFESSOR_BANCA // Professor avaliador de banca
+    BIBLIOTECARIO // Bibliotecário responsável por fichas catalográficas
     ADMIN // Administrador global do sistema
+}
+
+enum TipoProtocolo {
+    FICHA_CATALOGRAFICA
+    NADA_CONSTA
+    ENTREGA_VERSAO_FINAL
+}
+
+enum ProtocoloStatus {
+    ABERTO
+    EM_PROCESSAMENTO
+    DEFERIDO
+    INDEFERIDO
+    CANCELADO
 }
 
 enum TrabalhoStatus {
@@ -76,6 +91,8 @@ model Usuario {
     avaliacoes              Avaliacao[]
     notificacoes            Notificacao[]
     auditLogs               AuditLog[]
+    protocolosComoAluno     Protocolo[]       @relation("ProtocoloAluno")
+    protocolosComoResponsavel Protocolo[]     @relation("ProtocoloResponsavel")
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -100,8 +117,9 @@ model Trabalho {
     orientadorId String
     orientador   Usuario @relation("TrabalhoOrientador", fields: [orientadorId], references: [id])
 
-    versoes VersaoDocumento[]
-    banca   Banca?
+    versoes    VersaoDocumento[]
+    banca      Banca?
+    protocolos Protocolo[]
 
     dataInicio    DateTime  @default(now())
     dataSubmissao DateTime?
@@ -190,7 +208,8 @@ model Banca {
     resultado String? // APROVADO, APROVADO_COM_RESSALVAS, REPROVADO
 
     membros MembroBanca[]
-    ataUrl  String?
+    ataUrl             String?
+    folhaAprovacaoUrl  String?
 
     observacoes String?   @db.Text
     deletedAt   DateTime?
@@ -307,4 +326,35 @@ model ConfiguracaoSistema {
     updatedAt DateTime @updatedAt
 
     @@map("configuracoes_sistema")
+}
+model Protocolo {
+    id          String          @id @default(cuid())
+    tipo        TipoProtocolo
+    status      ProtocoloStatus @default(ABERTO)
+    observacoes String?         @db.Text
+
+    // Relacionamentos
+    alunoId String
+    aluno   Usuario @relation("ProtocoloAluno", fields: [alunoId], references: [id])
+
+    trabalhoId String
+    trabalho   Trabalho @relation(fields: [trabalhoId], references: [id])
+
+    responsavelId String?
+    responsavel   Usuario? @relation("ProtocoloResponsavel", fields: [responsavelId], references: [id])
+
+    // Arquivos envolvidos (URLs MinIO)
+    arquivoEnviadoUrl String? // Arquivo que o aluno enviou (ex: TCC para ficha)
+    arquivoRetornoUrl String? // Arquivo que o sistema/staff devolveu (ex: Ficha pronta)
+
+    dataAbertura   DateTime  @default(now())
+    dataFechamento DateTime?
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@index([alunoId])
+    @@index([trabalhoId])
+    @@index([status])
+    @@map("protocolos")
 }

@@ -19,7 +19,10 @@ import {
   BookOpen,
   Link as LinkIcon,
   Clock,
-  User
+  User,
+  Download,
+  FileText,
+  Loader2
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -32,6 +35,8 @@ export default function BancaDetailPage() {
   const [banca, setBanca] = useState<any>(null);
   const [isLoading, setIsLoading] = useState(true);
   const id = params.id as string;
+
+  const [isGenerating, setIsGenerating] = useState(false);
 
   useEffect(() => {
     async function fetchBanca() {
@@ -186,6 +191,110 @@ export default function BancaDetailPage() {
                        </p>
                     </div>
                   </Card>
+
+                  {/* Documentação Burocrática */}
+                  {banca.status === "REALIZADA" && (
+                    <Card className="surface-card p-10 bg-gradient-to-br from-indigo-500/5 to-purple-500/5 border-indigo-500/20">
+                      <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+                        <div className="flex items-center gap-3">
+                          <FileText className="w-6 h-6 text-indigo-500" />
+                          <div>
+                            <h3 className="text-2xl font-black text-[var(--foreground)]">Documentação da Defesa</h3>
+                            <p className="text-sm font-bold text-[var(--muted)]">Atas e Folha de Aprovação geradas pelo sistema</p>
+                          </div>
+                        </div>
+                        
+                        {(usuario?.role === "ADMIN" || usuario?.role === "COORDENADOR" || banca.trabalho.orientadorId === usuario?.id) && (
+                          <Button 
+                            variant="gradient" 
+                            size="sm" 
+                            className="rounded-xl shadow-md"
+                            disabled={isGenerating}
+                            onClick={async () => {
+                              setIsGenerating(true);
+                              try {
+                                const res = await fetch(`/api/bancas/${id}/gerar-documentos`, {
+                                  method: 'POST',
+                                  headers: { Authorization: `Bearer ${token}` }
+                                });
+                                if (res.ok) {
+                                  const data = await res.json();
+                                  setBanca({ ...banca, ataUrl: data.ataUrl, folhaAprovacaoUrl: data.folhaAprovacaoUrl });
+                                  alert("Documentos gerados com sucesso!");
+                                } else {
+                                  alert("Erro ao gerar documentos.");
+                                }
+                              } catch (e) {
+                                console.error(e);
+                              } finally {
+                                setIsGenerating(false);
+                              }
+                            }}
+                          >
+                            {isGenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
+                            {banca.ataUrl ? "Regerar Documentos" : "Gerar Documentos Oficiais"}
+                          </Button>
+                        )}
+                      </div>
+
+                      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
+                        {banca.ataUrl ? (
+                          <a href={banca.ataUrl} target="_blank" rel="noopener noreferrer">
+                            <div className="p-6 rounded-2xl bg-white dark:bg-gray-800 border border-[var(--border-light)] hover:border-indigo-500 transition-all group shadow-sm hover:shadow-md">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                                    <FileText className="w-5 h-5" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-black text-[var(--foreground)] uppercase">Ata de Defesa</p>
+                                    <p className="text-[10px] font-bold text-[var(--muted-light)]">PDF Assinado Digitalmente</p>
+                                  </div>
+                                </div>
+                                <Download className="w-5 h-5 text-[var(--muted-light)] group-hover:text-indigo-500 transition-colors" />
+                              </div>
+                            </div>
+                          </a>
+                        ) : (
+                          <div className="p-6 rounded-2xl bg-gray-100 dark:bg-gray-800/50 border border-dashed border-[var(--border-light)] flex items-center justify-center">
+                            <p className="text-xs font-bold text-[var(--muted-light)] italic uppercase tracking-widest">Ata ainda não disponível</p>
+                          </div>
+                        )}
+
+                        {banca.folhaAprovacaoUrl ? (
+                          <a href={banca.folhaAprovacaoUrl} target="_blank" rel="noopener noreferrer">
+                            <div className="p-6 rounded-2xl bg-white dark:bg-gray-800 border border-[var(--border-light)] hover:border-emerald-500 transition-all group shadow-sm hover:shadow-md">
+                              <div className="flex items-center justify-between">
+                                <div className="flex items-center gap-4">
+                                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                                    <FileText className="w-5 h-5" />
+                                  </div>
+                                  <div>
+                                    <p className="text-sm font-black text-[var(--foreground)] uppercase">Folha de Aprovação</p>
+                                    <p className="text-[10px] font-bold text-[var(--muted-light)]">Para inclusão no TCC</p>
+                                  </div>
+                                </div>
+                                <Download className="w-5 h-5 text-[var(--muted-light)] group-hover:text-emerald-500 transition-colors" />
+                              </div>
+                            </div>
+                          </a>
+                        ) : (
+                          <div className="p-6 rounded-2xl bg-gray-100 dark:bg-gray-800/50 border border-dashed border-[var(--border-light)] flex items-center justify-center">
+                            <p className="text-xs font-bold text-[var(--muted-light)] italic uppercase tracking-widest">Folha de Aprovação não gerada</p>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {banca.status === "REALIZADA" && banca.trabalho.alunoId === usuario?.id && (
+                        <div className="mt-8 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex gap-3">
+                          <div className="text-amber-500 mt-0.5">⚠️</div>
+                          <p className="text-xs font-bold text-amber-700 dark:text-amber-400 leading-relaxed uppercase tracking-tighter">
+                            Atenção discente: Após as correções do seu trabalho, você deve anexar a Folha de Aprovação ao PDF final e solicitar a Ficha Catalográfica na aba de Protocolos.
+                          </p>
+                        </div>
+                      )}
+                    </Card>
+                  )}
                </div>
 
                {/* Members List */}
