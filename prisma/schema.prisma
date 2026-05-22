@@ -30,6 +30,11 @@ enum ProtocoloStatus {
     CANCELADO
 }
 
+enum TipoTrabalho {
+    TCC1
+    TCC2
+}
+
 enum TrabalhoStatus {
     EM_ELABORACAO // Trabalho sendo escrito
     SUBMETIDO // Enviado para revisão
@@ -93,6 +98,7 @@ model Usuario {
     auditLogs               AuditLog[]
     protocolosComoAluno     Protocolo[]       @relation("ProtocoloAluno")
     protocolosComoResponsavel Protocolo[]     @relation("ProtocoloResponsavel")
+    assinaturasEletronicas  AssinaturaEletronica[]
 
     createdAt DateTime @default(now())
     updatedAt DateTime @updatedAt
@@ -106,6 +112,7 @@ model Trabalho {
     descricao     String         @db.Text
     palavrasChave String[]       @default([])
     curso         String
+    tipo          TipoTrabalho   @default(TCC2)
     status        TrabalhoStatus @default(EM_ELABORACAO)
     versaoAtual   Int            @default(0)
     deletedAt     DateTime?
@@ -120,6 +127,7 @@ model Trabalho {
     versoes    VersaoDocumento[]
     banca      Banca?
     protocolos Protocolo[]
+    autorizacaoPublicacao AutorizacaoPublicacao?
 
     dataInicio    DateTime  @default(now())
     dataSubmissao DateTime?
@@ -254,6 +262,7 @@ model Avaliacao {
 
     nota    Float
     parecer String @db.Text
+    documentoUrl String?
 
     criterios CriterioAvaliacao[]
 
@@ -338,7 +347,7 @@ model Protocolo {
     aluno   Usuario @relation("ProtocoloAluno", fields: [alunoId], references: [id])
 
     trabalhoId String
-    trabalho   Trabalho @relation(fields: [trabalhoId], references: [id])
+    trabalho   Trabalho @relation(fields: [trabalhoId], references: [id], onDelete: Cascade)
 
     responsavelId String?
     responsavel   Usuario? @relation("ProtocoloResponsavel", fields: [responsavelId], references: [id])
@@ -357,4 +366,37 @@ model Protocolo {
     @@index([trabalhoId])
     @@index([status])
     @@map("protocolos")
+}
+
+
+model AutorizacaoPublicacao {
+    id             String   @id @default(cuid())
+    trabalhoId     String   @unique
+    trabalho       Trabalho @relation(fields: [trabalhoId], references: [id], onDelete: Cascade)
+    rg             String
+    cpf            String
+    email          String
+    confidencial   Boolean  @default(false)
+    geraPatente    Boolean  @default(false)
+    liberadoReprod Boolean  @default(true)
+    documentoUrl   String?  // URL do PDF gerado
+    assinaturaId   String?  // Ligação com a assinatura eletrônica
+    createdAt      DateTime @default(now())
+
+    @@map("autorizacoes_publicacao")
+}
+
+model AssinaturaEletronica {
+    id              String   @id @default(cuid())
+    usuarioId       String
+    usuario         Usuario  @relation(fields: [usuarioId], references: [id], onDelete: Cascade)
+    tipoDocumento   String   // FICHA_GERAL, TERMO_APROVACAO, TERMO_AUTORIZACAO
+    entidadeId      String   // ID da Banca ou da AutorizacaoPublicacao
+    hashAssinatura  String   // Hash gerado
+    ipAddress       String
+    dataHora        DateTime @default(now())
+
+    @@index([usuarioId])
+    @@index([entidadeId, tipoDocumento])
+    @@map("assinaturas_eletronicas")
 }

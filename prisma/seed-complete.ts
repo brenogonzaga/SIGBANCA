@@ -13,6 +13,9 @@ async function main() {
   await prisma.banca.deleteMany();
   await prisma.comentario.deleteMany();
   await prisma.versaoDocumento.deleteMany();
+  await prisma.protocolo.deleteMany();
+  await prisma.autorizacaoPublicacao.deleteMany();
+  await prisma.assinaturaEletronica.deleteMany();
   await prisma.trabalho.deleteMany();
   await prisma.usuario.deleteMany();
 
@@ -480,6 +483,7 @@ async function main() {
             | "CANCELADO",
           curso: aluno.curso!,
           palavrasChave: trabalho.palavrasChave,
+          tipo: index % 2 === 0 ? "TCC1" : "TCC2",
         },
       });
     }),
@@ -587,8 +591,8 @@ async function main() {
       },
     });
 
-    // Adicionar 2 ou mais AVALIADORES (no mínimo 2)
-    const numAvaliadores = Math.floor(Math.random() * 2) + 2; // 2 ou 3 avaliadores
+    // Adicionar exatamente 2 AVALIADORES (para compor 3 membros com o orientador)
+    const numAvaliadores = 2;
     const avaliadoresAdicionados = new Set<string>([trabalhoCompleto!.orientadorId]);
 
     for (let i = 0; i < numAvaliadores; i++) {
@@ -725,28 +729,32 @@ async function main() {
 
   console.log("✅ Audit logs criados");
 
-  console.log("\n🎉 Seed completo concluído com sucesso!\n");
-  console.log("📊 Resumo dos dados criados:");
-  console.log(`   - ${2} Administradores`);
-  console.log(`   - ${2} Coordenadores`);
-  console.log(`   - ${professores.length} Professores Orientadores`);
-  console.log(`   - ${professoresBanca.length} Professores de Banca`);
-  console.log(`   - ${alunos.length} Alunos com trabalhos`);
-  console.log(`   - ${alunosSemTrabalho.length} Alunos sem trabalhos`);
-  console.log(`   - ${trabalhos.length} Trabalhos de Conclusão`);
-  console.log(`   - ${bancas.length} Bancas Agendadas`);
-  console.log("\n📧 Credenciais de acesso (todos com senha: senha123):");
-  console.log("   Admin: admin@ifam.edu.br");
-  console.log("   Admin 2: admin2@ifam.edu.br");
-  console.log("   Coordenador: coordenador@ifam.edu.br");
-  console.log("   Coordenador 2: coord.ti@ifam.edu.br");
-  console.log("   Professores: maria.santos@ifam.edu.br, joao.oliveira@ifam.edu.br, etc.");
-  console.log(
-    "   Alunos com trabalhos: breno.santos@edu.ifam.edu.br, juliana.costa@edu.ifam.edu.br, etc.",
-  );
-  console.log(
-    "   Alunos sem trabalhos: gustavo.alves@edu.ifam.edu.br, melissa.ribeiro@edu.ifam.edu.br, etc.\n",
-  );
+  console.log(`
+🎉 Seed completo concluído com sucesso!
+
+📊 Resumo dos dados criados:
+   - 2 Administradores
+   - 2 Coordenadores
+   - 6 Professores Orientadores
+   - 5 Professores de Banca
+   - 20 Alunos com trabalhos
+   - 15 Alunos sem trabalhos
+   - 15 Trabalhos de Conclusão (TCC 1 e TCC 2)
+   - 4 Bancas Agendadas
+
+📝 Para testar os fluxos de TCC 1 e TCC 2:
+   TCC 1 e TCC 2 foram distribuídos alternadamente entre os trabalhos.
+   As bancas criadas aleatoriamente devem possuir exemplos de ambos. Acesse com o login de um Professor de Banca para ver as diferenças na tela de avaliação e no PDF gerado.
+
+📧 Credenciais de acesso (todos com senha: senha123):
+   Admin: admin@ifam.edu.br
+   Admin 2: admin2@ifam.edu.br
+   Coordenador: coordenador@ifam.edu.br
+   Coordenador 2: coord.ti@ifam.edu.br
+   Professores: maria.santos@ifam.edu.br, joao.oliveira@ifam.edu.br, etc.
+   Alunos com trabalhos: breno.santos@edu.ifam.edu.br, juliana.costa@edu.ifam.edu.br, etc.
+   Alunos sem trabalhos: gustavo.alves@edu.ifam.edu.br, melissa.ribeiro@edu.ifam.edu.br, etc.
+`);
 }
 
 main()

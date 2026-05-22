@@ -53,22 +53,41 @@ export const POST = withAuthContext<{ params: Promise<{ id: string }> }>(
         );
       }
 
+      // 1.5. Buscar assinaturas eletrônicas das avaliações
+      const avaliacaoIds = banca.membros.map((m) => m.avaliacao?.id).filter(Boolean) as string[];
+      const assinaturas = await prisma.assinaturaEletronica.findMany({
+        where: {
+          entidadeId: { in: avaliacaoIds },
+          tipoDocumento: "AVALIACAO_INDIVIDUAL"
+        }
+      });
+
       // 2. Preparar dados para os documentos
+      const formatter = new Intl.DateTimeFormat('pt-BR', { dateStyle: 'long' });
+      const dataExtenso = formatter.format(banca.data);
+
       const dadosComuns = {
         instituicao: "Instituto Federal de Educação, Ciência e Tecnologia do Amazonas",
         campus: "Campus Manaus Centro", // Poderia vir de configuração do sistema
         curso: banca.trabalho.curso,
         aluno: banca.trabalho.aluno.nome,
         tituloTrabalho: banca.trabalho.titulo,
-        data: banca.data.toLocaleDateString("pt-BR"),
+        data: dataExtenso,
         horario: banca.horario,
         local: banca.local,
-        membros: banca.membros.map((m) => ({
-          nome: m.usuario.nome,
-          papel: m.papel,
-          nota: m.avaliacao?.nota || undefined,
-          instituicao: m.usuario.departamento || "IFAM",
-        })),
+        membros: banca.membros.map((m) => {
+          const assinatura = assinaturas.find(a => a.entidadeId === m.avaliacao?.id);
+          return {
+            nome: m.usuario.nome,
+            papel: m.papel,
+            nota: m.avaliacao?.nota || undefined,
+            instituicao: m.usuario.departamento || "IFAM",
+            assinatura: assinatura ? {
+              hash: assinatura.hashAssinatura,
+              data: assinatura.dataHora.toLocaleString("pt-BR")
+            } : null
+          };
+        }),
         notaFinal: banca.notaFinal,
         resultado: banca.resultado || "APROVADO",
       };

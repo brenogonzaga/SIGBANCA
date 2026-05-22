@@ -44,6 +44,7 @@ export const GET = withAuthContext<{ params: Promise<{ id: string }> }>(
                   departamento: true,
                 },
               },
+              avaliacao: true,
             },
           },
         },

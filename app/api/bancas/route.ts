@@ -149,15 +149,15 @@ export const POST = withAuth(async (request: NextRequest, user) => {
       );
     }
 
-    // Validar estrutura da banca: obrigatório ter 1 ORIENTADOR e ao menos 1 AVALIADOR
-    const temOrientador = data.membros.some((m) => m.papel === "ORIENTADOR");
+    // Validar estrutura da banca: obrigatório ter 1 ORIENTADOR e 2 AVALIADORES (total 3 membros)
+    const orientadores = data.membros.filter((m) => m.papel === "ORIENTADOR");
     const avaliadores = data.membros.filter((m) => m.papel === "AVALIADOR");
-    if (!temOrientador) {
-      return NextResponse.json({ error: "A banca deve ter um orientador" }, { status: 400 });
+    if (orientadores.length !== 1) {
+      return NextResponse.json({ error: "A banca deve ter exatamente 1 orientador" }, { status: 400 });
     }
-    if (avaliadores.length < 1) {
+    if (avaliadores.length !== 2) {
       return NextResponse.json(
-        { error: "A banca deve ter pelo menos um professor avaliador" },
+        { error: "A banca deve ter exatamente 2 professores avaliadores" },
         { status: 400 },
       );
     }

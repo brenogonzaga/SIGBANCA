@@ -37,6 +37,42 @@ export default function BancaDetailPage() {
   const id = params.id as string;
 
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isConsolidating, setIsConsolidating] = useState(false);
+
+  const todasAvaliacoesFeitas = banca?.membros?.length === 3 && banca.membros.every((m: any) => m.avaliacao != null);
+  const notas = banca?.membros?.map((m: any) => m.avaliacao?.nota || 0) || [];
+  const notaFinalCalculada = notas.length > 0 ? (notas.reduce((a: number, b: number) => a + b, 0) / notas.length) : 0;
+
+  const handleConsolidar = async () => {
+    if (!confirm("Tem certeza que deseja finalizar a banca? Isso calculará a média final e permitirá a emissão da Ata e Folha de Aprovação.")) return;
+    setIsConsolidating(true);
+    try {
+      const res = await fetch(`/api/bancas/${id}/resultado`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${token}`
+        },
+        body: JSON.stringify({
+          resultado: notaFinalCalculada >= 6.0 ? "APROVADO" : "REPROVADO",
+          notaFinal: notaFinalCalculada,
+          observacoes: "Avaliação consolidada pelo sistema."
+        })
+      });
+      if (res.ok) {
+        alert("Banca finalizada com sucesso!");
+        window.location.reload();
+      } else {
+        const err = await res.json();
+        alert(err.error || "Erro ao finalizar banca.");
+      }
+    } catch (e) {
+      console.error(e);
+      alert("Erro ao finalizar banca.");
+    } finally {
+      setIsConsolidating(false);
+    }
+  };
 
   useEffect(() => {
     async function fetchBanca() {
@@ -58,6 +94,13 @@ export default function BancaDetailPage() {
       }
     }
     fetchBanca();
+
+    const intervalId = setInterval(() => {
+      // Evita piscar a tela
+      fetchBanca();
+    }, 10000);
+
+    return () => clearInterval(intervalId);
   }, [id, token, router]);
 
   if (isLoading) {
@@ -99,11 +142,17 @@ export default function BancaDetailPage() {
                     </Button>
                   </Link>
                 )}
+                {todasAvaliacoesFeitas && banca.status !== "REALIZADA" && (usuario?.role === "COORDENADOR" || usuario?.role === "ADMIN" || banca.trabalho.orientadorId === usuario?.id) && (
+                  <Button onClick={handleConsolidar} disabled={isConsolidating} variant="default" className="rounded-2xl px-6 bg-emerald-600 hover:bg-emerald-700 text-white shadow-lg">
+                    {isConsolidating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <Star className="w-4 h-4 mr-2" />}
+                    Finalizar Banca
+                  </Button>
+                )}
                 {canEdit && (
                   <Link href={`/bancas/${id}/editar`}>
                     <Button variant="outline" className="rounded-2xl px-6 border-[var(--border)] bg-white dark:bg-gray-800">
                       <Edit className="w-4 h-4 mr-2" />
-                      Editar Agendamento
+                      Editar
                     </Button>
                   </Link>
                 )}
@@ -322,6 +371,22 @@ export default function BancaDetailPage() {
                               )}
                             </div>
                           </div>
+                          {m.avaliacao ? (
+                            <div className="flex items-center gap-3">
+                               <Badge variant="success" className="text-[10px] uppercase font-black tracking-widest">
+                                  Nota: {m.avaliacao.nota.toFixed(1)}
+                               </Badge>
+                               {m.avaliacao.documentoUrl && (
+                                 <a href={m.avaliacao.documentoUrl} target="_blank" rel="noopener noreferrer">
+                                    <button className="p-2 bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white transition-all rounded-lg" title="Baixar PDF Assinado">
+                                       <Download className="w-4 h-4" />
+                                    </button>
+                                 </a>
+                               )}
+                            </div>
+                          ) : (
+                            <Badge variant="outline" className="text-[10px] uppercase font-black tracking-widest text-[var(--muted)]">Pendente</Badge>
+                          )}
                         </div>
                       ))}
                     </div>

@@ -63,6 +63,22 @@ const styles = StyleSheet.create({
     textAlign: 'center',
     fontSize: 10,
   },
+  signatureSealContainer: {
+    height: 30,
+    justifyContent: 'flex-end',
+    marginBottom: 2,
+  },
+  signatureSeal: {
+    marginTop: 6,
+    fontSize: 8,
+    color: '#4B5563',
+    textAlign: 'center',
+  },
+  signatureHash: {
+    fontSize: 7,
+    color: '#9CA3AF',
+    textAlign: 'center',
+  },
   footer: {
     position: 'absolute',
     bottom: 30,
@@ -85,6 +101,10 @@ interface FolhaAprovacaoProps {
       nome: string;
       instituicao: string;
       papel: string;
+      assinatura?: {
+        hash: string;
+        data: string;
+      } | null;
     }[];
   };
 }
@@ -104,7 +124,7 @@ export const FolhaAprovacao: React.FC<FolhaAprovacaoProps> = ({ dados }) => (
       </View>
 
       <Text style={styles.aprovacao}>
-        Aprovado em ________ de ________________ de {new Date().getFullYear()}
+        Aprovado em {dados.dataDefesa}
       </Text>
 
       <Text style={styles.bancaTitle}>BANCA EXAMINADORA</Text>
@@ -112,6 +132,16 @@ export const FolhaAprovacao: React.FC<FolhaAprovacaoProps> = ({ dados }) => (
       <View style={styles.signatureSection}>
         {dados.membros.map((membro, index) => (
           <View key={index} style={styles.signatureBlock}>
+            <View style={styles.signatureSealContainer}>
+              {membro.assinatura ? (
+                <View>
+                  <Text style={styles.signatureSeal}>Assinado eletronicamente em {membro.assinatura.data}</Text>
+                  <Text style={styles.signatureHash}>Hash: {membro.assinatura.hash}</Text>
+                </View>
+              ) : (
+                <Text style={[styles.signatureSeal, { fontStyle: 'italic' }]}>Assinatura Eletrônica Pendente</Text>
+              )}
+            </View>
             <View style={styles.signatureLine} />
             <Text style={styles.signatureName}>{membro.nome}</Text>
             <Text style={styles.signatureInst}>{membro.instituicao}</Text>

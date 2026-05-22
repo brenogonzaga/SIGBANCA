@@ -11,6 +11,7 @@ import { useAuth } from "@/app/contexts/AuthContext";
 import { useToast } from "../ui/Toast";
 import { ConfirmModal } from "../ui/Modal";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 
 interface Banca {
   id: string;
@@ -24,6 +25,7 @@ interface Banca {
   trabalho: {
     id: string;
     titulo: string;
+    tipo: "TCC1" | "TCC2";
     aluno: {
       nome: string;
       curso: string;
@@ -48,6 +50,7 @@ interface BancaListProps {
 export function BancaList({ initialBancas, hideHeader = false }: BancaListProps) {
   const { token, usuario } = useAuth();
   const { showToast } = useToast();
+  const router = useRouter();
   const [bancas, setBancas] = useState<Banca[]>(initialBancas || []);
   const [isLoading, setIsLoading] = useState(!initialBancas);
   const [filterStatus, setFilterStatus] = useState<string>("TODAS");
@@ -246,33 +249,52 @@ export function BancaList({ initialBancas, hideHeader = false }: BancaListProps)
               <div className="p-8 flex-1">
                 <div className="flex justify-between items-start mb-6">
                   <div className="flex flex-col gap-2">
-                    <Badge
-                      variant={
-                        statusConfig[banca.status as keyof typeof statusConfig]?.variant ||
-                        "default"
-                      }
-                      className="font-black text-[10px] tracking-widest uppercase px-4 py-1.5"
-                    >
-                      {statusConfig[banca.status as keyof typeof statusConfig]?.label ||
-                        banca.status}
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge
+                        variant={
+                          statusConfig[banca.status as keyof typeof statusConfig]?.variant ||
+                          "default"
+                        }
+                        className="font-black text-[10px] tracking-widest uppercase px-4 py-1.5"
+                      >
+                        {statusConfig[banca.status as keyof typeof statusConfig]?.label ||
+                          banca.status}
+                      </Badge>
+                      <Badge 
+                        variant="outline" 
+                        className={`font-black text-[10px] tracking-widest uppercase px-4 py-1.5 ${
+                          banca.trabalho.tipo === 'TCC1' 
+                            ? 'text-blue-500 border-blue-500/20 bg-blue-500/5' 
+                            : 'text-purple-500 border-purple-500/20 bg-purple-500/5'
+                        }`}
+                      >
+                        {banca.trabalho.tipo === 'TCC1' ? 'TCC 1' : 'TCC 2'}
+                      </Badge>
+                    </div>
                   </div>
                   <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                     {canEdit(banca) && (
-                      <Link href={`/bancas/${banca.id}/editar`}>
-                        <button className="w-10 h-10 bg-white border border-[var(--border)] rounded-xl flex items-center justify-center text-[var(--primary)] hover:bg-[var(--primary-light)]/20 transition-all shadow-sm">
-                          <Edit className="w-4 h-4" />
-                        </button>
-                      </Link>
+                      <button 
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          router.push(`/bancas/${banca.id}/editar`);
+                        }}
+                        className="w-10 h-10 bg-white border border-[var(--border)] rounded-xl flex items-center justify-center text-[var(--primary)] hover:bg-[var(--primary-light)]/20 transition-all shadow-sm"
+                      >
+                        <Edit className="w-4 h-4" />
+                      </button>
                     )}
                     {canDelete(banca) && (
                       <button
-                        onClick={() =>
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
                           setBancaToDelete({
                             id: banca.id,
                             titulo: banca.trabalho.titulo,
-                          })
-                        }
+                          });
+                        }}
                         className="w-10 h-10 bg-white border border-[var(--border)] rounded-xl flex items-center justify-center text-[var(--danger)] hover:bg-red-50 transition-all shadow-sm"
                       >
                         <Trash2 className="w-4 h-4" />

@@ -16,17 +16,6 @@ export const POST = withAuthContext<{ params: Promise<{ id: string }> }>(
     try {
       const { id } = await context.params;
 
-      if (user.role !== "COORDENADOR" && user.role !== "ADMIN") {
-        return NextResponse.json(
-          { error: "Apenas coordenadores podem registrar resultados de banca" },
-          { status: 403 }
-        );
-      }
-
-      const body = await request.json();
-      const { resultado, notaFinal, observacoes, ataUrl } =
-        registrarResultadoSchema.parse(body);
-
       const banca = await prisma.banca.findUnique({
         where: { id },
         include: {
@@ -48,6 +37,19 @@ export const POST = withAuthContext<{ params: Promise<{ id: string }> }>(
       if (!banca) {
         return NextResponse.json({ error: "Banca não encontrada" }, { status: 404 });
       }
+
+      const isOrientador = banca.trabalho.orientadorId === user.userId;
+
+      if (user.role !== "COORDENADOR" && user.role !== "ADMIN" && !isOrientador) {
+        return NextResponse.json(
+          { error: "Apenas coordenadores, admins ou o orientador do trabalho podem registrar resultados da banca" },
+          { status: 403 }
+        );
+      }
+
+      const body = await request.json();
+      const { resultado, notaFinal, observacoes, ataUrl } =
+        registrarResultadoSchema.parse(body);
 
       if (banca.status !== "AGENDADA" && banca.status !== "EM_ANDAMENTO") {
         return NextResponse.json(
