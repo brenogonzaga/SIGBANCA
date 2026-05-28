@@ -249,7 +249,7 @@ export default function BancaDetailPage() {
                           <FileText className="w-6 h-6 text-indigo-500" />
                           <div>
                             <h3 className="text-2xl font-black text-[var(--foreground)]">Documentação da Defesa</h3>
-                            <p className="text-sm font-bold text-[var(--muted)]">Atas e Folha de Aprovação geradas pelo sistema</p>
+                            <p className="text-sm font-bold text-[var(--muted)]">Atas, Ficha Geral e Termo de Aprovação gerados pelo sistema</p>
                           </div>
                         </div>
                         
@@ -268,7 +268,12 @@ export default function BancaDetailPage() {
                                 });
                                 if (res.ok) {
                                   const data = await res.json();
-                                  setBanca({ ...banca, ataUrl: data.ataUrl, folhaAprovacaoUrl: data.folhaAprovacaoUrl });
+                                  setBanca({ 
+                                    ...banca, 
+                                    ataPdfUrl: data.ataPdfUrl, 
+                                    termoAprovacaoPdfUrl: data.termoAprovacaoPdfUrl,
+                                    fichaGeralPdfUrl: data.fichaGeralPdfUrl 
+                                  });
                                   alert("Documentos gerados com sucesso!");
                                 } else {
                                   alert("Erro ao gerar documentos.");
@@ -276,60 +281,86 @@ export default function BancaDetailPage() {
                               } catch (e) {
                                 console.error(e);
                               } finally {
-                                setIsGenerating(false);
+                                Object.keys(banca).length > 0 && setIsGenerating(false);
                               }
                             }}
                           >
                             {isGenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
-                            {banca.ataUrl ? "Regerar Documentos" : "Gerar Documentos Oficiais"}
+                            {banca.ataPdfUrl ? "Regerar Documentos" : "Gerar Documentos Oficiais"}
                           </Button>
                         )}
                       </div>
 
-                      <div className="mt-8 grid grid-cols-1 sm:grid-cols-2 gap-4">
-                        {banca.ataUrl ? (
-                          <a href={banca.ataUrl} target="_blank" rel="noopener noreferrer">
-                            <div className="p-6 rounded-2xl bg-white dark:bg-gray-800 border border-[var(--border-light)] hover:border-indigo-500 transition-all group shadow-sm hover:shadow-md">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                  <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
-                                    <FileText className="w-5 h-5" />
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-black text-[var(--foreground)] uppercase">Ata de Defesa</p>
-                                    <p className="text-[10px] font-bold text-[var(--muted-light)]">PDF Assinado Digitalmente</p>
-                                  </div>
+                      <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4">
+                        {/* Ata de Defesa */}
+                        {banca.ataPdfUrl ? (
+                          <a href={banca.ataPdfUrl} target="_blank" rel="noopener noreferrer">
+                            <div className="p-6 rounded-2xl bg-white dark:bg-gray-800 border border border-[var(--border-light)] hover:border-indigo-500 transition-all group shadow-sm hover:shadow-md h-full flex flex-col justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-indigo-500/10 text-indigo-500 flex items-center justify-center">
+                                  <FileText className="w-5 h-5" />
                                 </div>
+                                <div>
+                                  <p className="text-sm font-black text-[var(--foreground)] uppercase">Ata de Defesa</p>
+                                  <p className="text-[10px] font-bold text-[var(--muted-light)]">PDF Assinado Digitalmente</p>
+                                </div>
+                              </div>
+                              <div className="mt-4 flex justify-end">
                                 <Download className="w-5 h-5 text-[var(--muted-light)] group-hover:text-indigo-500 transition-colors" />
                               </div>
                             </div>
                           </a>
                         ) : (
-                          <div className="p-6 rounded-2xl bg-gray-100 dark:bg-gray-800/50 border border-dashed border-[var(--border-light)] flex items-center justify-center">
-                            <p className="text-xs font-bold text-[var(--muted-light)] italic uppercase tracking-widest">Ata ainda não disponível</p>
+                          <div className="p-6 rounded-2xl bg-gray-100 dark:bg-gray-800/50 border border-dashed border-[var(--border-light)] flex items-center justify-center min-h-[100px]">
+                            <p className="text-xs font-bold text-[var(--muted-light)] italic uppercase tracking-widest">Ata indisponível</p>
                           </div>
                         )}
 
-                        {banca.folhaAprovacaoUrl ? (
-                          <a href={banca.folhaAprovacaoUrl} target="_blank" rel="noopener noreferrer">
-                            <div className="p-6 rounded-2xl bg-white dark:bg-gray-800 border border-[var(--border-light)] hover:border-emerald-500 transition-all group shadow-sm hover:shadow-md">
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-4">
-                                  <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
-                                    <FileText className="w-5 h-5" />
-                                  </div>
-                                  <div>
-                                    <p className="text-sm font-black text-[var(--foreground)] uppercase">Folha de Aprovação</p>
-                                    <p className="text-[10px] font-bold text-[var(--muted-light)]">Para inclusão no TCC</p>
-                                  </div>
+                        {/* Termo de Aprovação */}
+                        {banca.termoAprovacaoPdfUrl ? (
+                          <a href={banca.termoAprovacaoPdfUrl} target="_blank" rel="noopener noreferrer">
+                            <div className="p-6 rounded-2xl bg-white dark:bg-gray-800 border border border-[var(--border-light)] hover:border-emerald-500 transition-all group shadow-sm hover:shadow-md h-full flex flex-col justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-emerald-500/10 text-emerald-500 flex items-center justify-center">
+                                  <FileText className="w-5 h-5" />
                                 </div>
+                                <div>
+                                  <p className="text-sm font-black text-[var(--foreground)] uppercase">Termo de Aprovação</p>
+                                  <p className="text-[10px] font-bold text-[var(--muted-light)]">Para inclusão no TCC</p>
+                                </div>
+                              </div>
+                              <div className="mt-4 flex justify-end">
                                 <Download className="w-5 h-5 text-[var(--muted-light)] group-hover:text-emerald-500 transition-colors" />
                               </div>
                             </div>
                           </a>
                         ) : (
-                          <div className="p-6 rounded-2xl bg-gray-100 dark:bg-gray-800/50 border border-dashed border-[var(--border-light)] flex items-center justify-center">
-                            <p className="text-xs font-bold text-[var(--muted-light)] italic uppercase tracking-widest">Folha de Aprovação não gerada</p>
+                          <div className="p-6 rounded-2xl bg-gray-100 dark:bg-gray-800/50 border border-dashed border-[var(--border-light)] flex items-center justify-center min-h-[100px]">
+                            <p className="text-xs font-bold text-[var(--muted-light)] italic uppercase tracking-widest">Termo não gerado</p>
+                          </div>
+                        )}
+
+                        {/* Ficha Geral de Avaliação */}
+                        {banca.fichaGeralPdfUrl ? (
+                          <a href={banca.fichaGeralPdfUrl} target="_blank" rel="noopener noreferrer">
+                            <div className="p-6 rounded-2xl bg-white dark:bg-gray-800 border border border-[var(--border-light)] hover:border-amber-500 transition-all group shadow-sm hover:shadow-md h-full flex flex-col justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-500 flex items-center justify-center">
+                                  <FileText className="w-5 h-5" />
+                                </div>
+                                <div>
+                                  <p className="text-sm font-black text-[var(--foreground)] uppercase">Ficha Geral</p>
+                                  <p className="text-[10px] font-bold text-[var(--muted-light)]">Notas e Consolidação</p>
+                                </div>
+                              </div>
+                              <div className="mt-4 flex justify-end">
+                                <Download className="w-5 h-5 text-[var(--muted-light)] group-hover:text-amber-500 transition-colors" />
+                              </div>
+                            </div>
+                          </a>
+                        ) : (
+                          <div className="p-6 rounded-2xl bg-gray-100 dark:bg-gray-800/50 border border-dashed border-[var(--border-light)] flex items-center justify-center min-h-[100px]">
+                            <p className="text-xs font-bold text-[var(--muted-light)] italic uppercase tracking-widest">Ficha Geral não gerada</p>
                           </div>
                         )}
                       </div>
@@ -338,7 +369,7 @@ export default function BancaDetailPage() {
                         <div className="mt-8 p-4 rounded-xl bg-amber-500/10 border border-amber-500/20 flex gap-3">
                           <div className="text-amber-500 mt-0.5">⚠️</div>
                           <p className="text-xs font-bold text-amber-700 dark:text-amber-400 leading-relaxed uppercase tracking-tighter">
-                            Atenção discente: Após as correções do seu trabalho, você deve anexar a Folha de Aprovação ao PDF final e solicitar a Ficha Catalográfica na aba de Protocolos.
+                            Atenção discente: Após as correções do seu trabalho, você deve anexar o Termo de Aprovação ao PDF final e solicitar a Ficha Catalográfica na aba de Protocolos.
                           </p>
                         </div>
                       )}

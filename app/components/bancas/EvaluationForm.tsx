@@ -17,6 +17,27 @@ import { useRouter } from "next/navigation";
 import { useToast } from "../ui/Toast";
 import { submeterAvaliacaoIndividual } from "@/app/actions/avaliacao";
 
+const descricoesCriterios: Record<string, string> = {
+  // TCC 1 e comuns
+  problema: "Justificativa da escolha, relevância do tema e definição do problema.",
+  revisaoFundamentacao: "Fundamentação do tema com fontes, citações e atendimentos às normas da ABNT. Redação com clareza, terminologia técnica, conceitos científicos, ortografia e concordância.",
+  revisaoAbordagem: "Abordagem sequencial lógica, equilibrada e ordenada. Revisão com abrangência razoável sobre o problema investigado.",
+  propostaSolucao: "Proposta da Solução do Problema Identificado.",
+  riscos: "Discussão dos Riscos e Dificuldades.",
+  solucaoProposta: "Solução Proposta.",
+
+  // TCC 2
+  introducao: "Justificativa da escolha, relevância do tema e definição do problema.",
+  objetivos: "Apresentação com coerência e clareza do problema pesquisado.",
+  revisao: "Fundamentação do tema com fontes, citações e atendimentos às normas da ABNT. Redação com clareza, terminologia técnica, conceitos científicos, ortografia e concordância.",
+  metodologia: "Procedimentos adequados e bem definidos.",
+  resultadosApres: "Clareza e objetividade.",
+  resultadosDisc: "Confronto dos dados atuais com estudos anteriores contribuindo para a discussão do problema. Conteúdo: significativo, criativo e/ou relevante para área de informática.",
+  apresentacao: "Apresentação oral do trabalho (qualidade do material áudio-visual, utilização de linguagem adequada, resposta aos questionamentos da banca).",
+  tempo: "Cumprimento do tempo estabelecido.",
+  software: "Avaliação da elaboração do projeto, na perspectiva da conformidade com os objetivos do trabalho proposto, considerando se as entregas estão adequadas ao propósito do trabalho."
+};
+
 interface Props {
   bancaId: string;
 }
@@ -36,6 +57,7 @@ export function EvaluationForm({ bancaId }: Props) {
     introducao: 0,
     objetivos: 0,
     revisao: 0,
+    revisaoAbordagem: 0,
     metodologia: 0,
     resultadosApres: 0,
     resultadosDisc: 0,
@@ -48,6 +70,7 @@ export function EvaluationForm({ bancaId }: Props) {
     introducao: 1.0,
     objetivos: 1.0,
     revisao: 1.0,
+    revisaoAbordagem: 0.5,
     metodologia: 0.5,
     resultadosApres: 1.0,
     resultadosDisc: 1.0,
@@ -200,12 +223,16 @@ export function EvaluationForm({ bancaId }: Props) {
   const renderCriterioInput = (field: string, label: string, max: number) => {
     const value = isTcc1 ? notasTcc1[field as keyof typeof notasTcc1] : notas[field as keyof typeof notas];
     const percentage = (value / max) * 100;
+    const desc = descricoesCriterios[field];
     
     return (
       <div key={field} className="flex flex-col bg-[var(--surface-light)] p-5 rounded-2xl border border-[var(--border-light)] hover:border-[var(--primary)]/30 transition-all group shadow-sm">
-        <div className="flex justify-between items-center mb-4">
-          <label className="text-[11px] font-black text-[var(--foreground)] uppercase tracking-wider">{label}</label>
-          <div className="flex items-center gap-1 bg-[var(--background)] px-2 py-1 rounded-lg border border-[var(--border)]">
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-4 gap-3">
+          <div className="flex flex-col flex-1">
+            <label className="text-[11px] font-black text-[var(--foreground)] uppercase tracking-wider">{label}</label>
+            {desc && <span className="text-[10px] text-[var(--muted)] font-medium mt-1 normal-case leading-relaxed">{desc}</span>}
+          </div>
+          <div className="flex items-center gap-1 bg-[var(--background)] px-2 py-1 rounded-lg border border-[var(--border)] self-start md:self-center">
              <input 
                 type="number" 
                 step="0.05" 
@@ -339,6 +366,7 @@ export function EvaluationForm({ bancaId }: Props) {
                       {renderCriterioInput('introducao', '1. Introdução', 1.0)}
                       {renderCriterioInput('objetivos', '2. Definição dos Objetivos', 1.0)}
                       {renderCriterioInput('revisao', '3. Revisão Bibliográfica', 1.0)}
+                      {renderCriterioInput('revisaoAbordagem', 'Abordagem Sequencial', 0.5)}
                       {renderCriterioInput('metodologia', '4. Orientação Metodológica', 0.5)}
                       {renderCriterioInput('resultadosApres', '5. Apresentação dos Resultados', 1.0)}
                       {renderCriterioInput('resultadosDisc', '6. Discussão dos Resultados', 1.0)}
