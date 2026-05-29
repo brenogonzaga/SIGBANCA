@@ -409,7 +409,7 @@ export const MarkdownPdf = ({ markdown, assinaturas = {} }: MarkdownPdfProps) =>
     if (!dados) {
       return (
         <View key={`sig-pend-${key}`} style={styles.signatureContainer}>
-          <Text style={[styles.signatureSeal, { color: '#EF4444', fontStyle: 'italic' }]}>
+          <Text style={[styles.signatureSeal, { color: '#EF4444' }]}>
             Assinatura Eletrônica Pendente
           </Text>
           <View style={styles.signatureLine} />
