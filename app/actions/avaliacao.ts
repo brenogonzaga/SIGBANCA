@@ -125,23 +125,9 @@ export async function submeterAvaliacaoIndividual(
       }
     });
 
-    // 5. Gerar Assinatura Eletrônica
-    const headerData = await headers();
-    const ipAddress = headerData.get("x-forwarded-for") || "127.0.0.1";
-    const conteudoAssinatura = `AVALIACAO:${avaliacao.id}:${avaliador.id}:${Date.now()}`;
-    const hashAssinatura = crypto.createHash('sha256').update(conteudoAssinatura).digest('hex').substring(0, 32).toUpperCase();
-
-    const assinatura = await prisma.assinaturaEletronica.create({
-      data: {
-        usuarioId: avaliador.id,
-        tipoDocumento: "AVALIACAO_INDIVIDUAL",
-        entidadeId: avaliacao.id,
-        hashAssinatura: hashAssinatura,
-        ipAddress: ipAddress
-      }
-    });
-
-    const dataHoraFormatada = assinatura.dataHora.toLocaleString('pt-BR');
+    // 5. A assinatura eletrônica mockada foi removida para usar o DocuSign
+    // Deixaremos o status como PENDENTE na interface por enquanto
+    const dataHoraFormatada = new Date().toLocaleString('pt-BR');
 
     // 6. Gerar o PDF com a Assinatura Eletrônica a partir do template Markdown
     try {
@@ -202,19 +188,37 @@ export async function submeterAvaliacaoIndividual(
 
       const pdfElement = React.createElement(MarkdownPdf, {
         markdown: filledMarkdown,
-        assinaturas: {
-          avaliador: {
-            nome: avaliador.nome,
-            papel: membro.papel === "ORIENTADOR" ? "ORIENTADOR (A)" : membro.papel,
-            hash: assinatura.hashAssinatura,
-            dataHora: dataHoraFormatada
-          }
-        }
+        // Não passamos a assinatura mockada para que o DocuSign assine por cima
+        assinaturas: {}
       });
 
       const pdfBuffer = await renderToBuffer(pdfElement);
       const pdfPath = `avaliacoes/${bancaId}_${avaliadorId}_${Date.now()}.pdf`;
       const { url } = await uploadFile(pdfBuffer, pdfPath);
+      
+      // 7. Enviar para o DocuSign
+      const { createEnvelope } = await import("@/app/lib/docusign");
+      const envelopeId = await createEnvelope(
+        [{ name: `Avaliacao_${avaliador.nome.replace(/\s+/g, '_')}.pdf`, buffer: pdfBuffer }],
+        [{
+          email: avaliador.email,
+          name: avaliador.nome,
+          routingOrder: "1",
+          anchorString: `[sg_${avaliador.nome}]`
+        }],
+        `Avaliação Individual - ${banca.trabalho.aluno.nome}`
+      );
+
+      // Salva o envelope no lugar do hash antigo para referência
+      await prisma.assinaturaEletronica.create({
+        data: {
+          usuarioId: avaliador.id,
+          tipoDocumento: "AVALIACAO_INDIVIDUAL",
+          entidadeId: avaliacao.id,
+          hashAssinatura: `DOCUSIGN:${envelopeId}`,
+          ipAddress: "DocuSign API"
+        }
+      });
 
       // Atualizar a avaliação com a URL do PDF
       await prisma.avaliacao.update({

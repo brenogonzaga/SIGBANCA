@@ -218,6 +218,11 @@ model Banca {
     membros MembroBanca[]
     ataUrl             String?
     folhaAprovacaoUrl  String?
+    ataPdfUrl          String?
+    fichaGeralPdfUrl   String?
+    termoAprovacaoPdfUrl String?
+    docusignEnvelopeId String?
+    statusAssinatura   String? // PENDENTE, CONCLUIDO, RECUSADO
 
     observacoes String?   @db.Text
     deletedAt   DateTime?

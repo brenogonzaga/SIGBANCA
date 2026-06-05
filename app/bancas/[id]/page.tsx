@@ -22,7 +22,8 @@ import {
   User,
   Download,
   FileText,
-  Loader2
+  Loader2,
+  RefreshCw
 } from "lucide-react";
 import { format } from "date-fns";
 import { ptBR } from "date-fns/locale";
@@ -254,11 +255,37 @@ export default function BancaDetailPage() {
                         </div>
                         
                         {(usuario?.role === "ADMIN" || usuario?.role === "COORDENADOR" || banca.trabalho.orientadorId === usuario?.id) && (
-                          <Button 
-                            variant="gradient" 
-                            size="sm" 
-                            className="rounded-xl shadow-md"
-                            disabled={isGenerating}
+                          <div className="flex gap-2">
+                            {banca.docusignEnvelopeId && (
+                              <Button 
+                                variant="outline" 
+                                size="sm" 
+                                className="rounded-xl shadow-sm border-[var(--border-light)] hover:bg-indigo-50 dark:hover:bg-indigo-900/20"
+                                onClick={async () => {
+                                  try {
+                                    const res = await fetch(`/api/bancas/${id}/status-assinaturas`, {
+                                      headers: { Authorization: `Bearer ${token}` }
+                                    });
+                                    if (res.ok) {
+                                      alert("Sincronizado com o DocuSign! A página será atualizada.");
+                                      window.location.reload();
+                                    } else {
+                                      alert("Erro ao sincronizar.");
+                                    }
+                                  } catch (e) {
+                                    console.error(e);
+                                  }
+                                }}
+                              >
+                                <RefreshCw className="w-4 h-4 mr-2" />
+                                Sincronizar DocuSign
+                              </Button>
+                            )}
+                            <Button 
+                              variant="gradient" 
+                              size="sm" 
+                              className="rounded-xl shadow-md"
+                              disabled={isGenerating}
                             onClick={async () => {
                               setIsGenerating(true);
                               try {
@@ -288,6 +315,7 @@ export default function BancaDetailPage() {
                             {isGenerating ? <Loader2 className="w-4 h-4 mr-2 animate-spin" /> : <FileText className="w-4 h-4 mr-2" />}
                             {banca.ataPdfUrl ? "Regerar Documentos" : "Gerar Documentos Oficiais"}
                           </Button>
+                          </div>
                         )}
                       </div>
 
@@ -408,11 +436,33 @@ export default function BancaDetailPage() {
                                   Nota: {m.avaliacao.nota.toFixed(1)}
                                </Badge>
                                {m.avaliacao.documentoUrl && (
-                                 <a href={m.avaliacao.documentoUrl} target="_blank" rel="noopener noreferrer">
-                                    <button className="p-2 bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white transition-all rounded-lg" title="Baixar PDF Assinado">
-                                       <Download className="w-4 h-4" />
-                                    </button>
-                                 </a>
+                                 <div className="flex gap-1">
+                                   <button 
+                                     onClick={async () => {
+                                       try {
+                                         const res = await fetch(`/api/avaliacoes/${m.avaliacao.id}/status-assinatura`, {
+                                            headers: { Authorization: `Bearer ${token}` }
+                                         });
+                                         if (res.ok) {
+                                            alert("Sincronizado! Se houver um novo PDF assinado, ele foi atualizado.");
+                                            window.location.reload();
+                                         } else {
+                                            alert("Erro ao sincronizar avaliação.");
+                                         }
+                                       } catch(e) {
+                                         console.error(e);
+                                       }
+                                     }}
+                                     className="p-2 bg-indigo-500/10 text-indigo-500 hover:bg-indigo-500 hover:text-white transition-all rounded-lg" title="Sincronizar Assinatura"
+                                   >
+                                     <RefreshCw className="w-4 h-4" />
+                                   </button>
+                                   <a href={m.avaliacao.documentoUrl} target="_blank" rel="noopener noreferrer">
+                                      <button className="p-2 bg-[var(--primary)]/10 text-[var(--primary)] hover:bg-[var(--primary)] hover:text-white transition-all rounded-lg" title="Baixar PDF Atual">
+                                         <Download className="w-4 h-4" />
+                                      </button>
+                                   </a>
+                                 </div>
                                )}
                             </div>
                           ) : (

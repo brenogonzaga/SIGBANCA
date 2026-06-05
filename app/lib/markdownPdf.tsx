@@ -406,33 +406,23 @@ export const MarkdownPdf = ({ markdown, assinaturas = {} }: MarkdownPdfProps) =>
   };
 
   const renderSeloAssinatura = (dados: AssinaturaMembro | null | undefined, key: number) => {
-    if (!dados) {
-      return (
-        <View key={`sig-pend-${key}`} style={styles.signatureContainer}>
-          <Text style={[styles.signatureSeal, { color: '#EF4444' }]}>
-            Assinatura Eletrônica Pendente
-          </Text>
-          <View style={styles.signatureLine} />
-          <Text style={styles.signatureLabel}>{dados?.nome || 'Avaliador'}</Text>
-          <Text style={styles.signatureSubLabel}>{dados?.papel || 'Membro da Banca'}</Text>
-        </View>
-      );
-    }
-
-    const { nome, papel, hash, dataHora } = dados;
+    const nome = dados?.nome || 'Membro da Banca';
+    const papel = dados?.papel || 'Avaliador';
+    const anchor = `[sg_${nome}]`;
 
     return (
       <View key={`sig-${key}`} style={styles.signatureContainer}>
-        {hash ? (
+        {/* Âncora invisível para o DocuSign encontrar o local exato */}
+        <Text style={{ fontSize: 3, color: '#FFFFFF' }}>{anchor}</Text>
+        
+        {dados?.hash && !dados.hash.startsWith('DOCUSIGN:') ? (
           <View style={styles.signatureBox}>
             <Text style={styles.signatureSeal}>Documento Assinado Eletronicamente</Text>
-            <Text style={styles.signatureMeta}>Por {nome} em {dataHora}</Text>
-            <Text style={styles.signatureHash}>Hash SHA-256: {hash}</Text>
+            <Text style={styles.signatureMeta}>Por {nome} em {dados.dataHora}</Text>
+            <Text style={styles.signatureHash}>Hash SHA-256: {dados.hash}</Text>
           </View>
         ) : (
-          <View style={[styles.signatureBox, { borderColor: '#EF4444', backgroundColor: '#FEF2F2' }]}>
-            <Text style={[styles.signatureSeal, { color: '#DC2626' }]}>Assinatura Eletrônica Pendente</Text>
-          </View>
+          <View style={{ height: 35 }} />
         )}
         <View style={styles.signatureLine} />
         <Text style={styles.signatureLabel}>{nome}</Text>

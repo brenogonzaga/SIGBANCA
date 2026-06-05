@@ -191,13 +191,16 @@ export const AtaDefesa: React.FC<AtaDefesaProps> = ({ dados }) => (
         {dados.membros.map((membro, index) => (
           <View key={index} style={{ marginBottom: 30 }}>
             <View style={styles.signatureSealContainer}>
-              {membro.assinatura ? (
+              {/* Âncora invisível para o DocuSign encontrar o local exato */}
+              <Text style={{ fontSize: 3, color: '#FFFFFF', textAlign: 'center' }}>{`[sg_${membro.nome}]`}</Text>
+              
+              {membro.assinatura && !membro.assinatura.hash.startsWith('DOCUSIGN:') ? (
                 <View>
                   <Text style={styles.signatureSeal}>Assinado eletronicamente em {membro.assinatura.data}</Text>
                   <Text style={styles.signatureHash}>Hash: {membro.assinatura.hash}</Text>
                 </View>
               ) : (
-                <Text style={[styles.signatureSeal, { fontStyle: 'italic' }]}>Assinatura Eletrônica Pendente</Text>
+                <View style={{ height: 20 }} />
               )}
             </View>
             <View style={styles.signatureLine} />

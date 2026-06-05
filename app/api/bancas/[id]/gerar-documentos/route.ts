@@ -228,13 +228,56 @@ export const POST = withAuthContext<{ params: Promise<{ id: string }> }>(
       const termoAprovacaoPath = `bancas/${id}/termo_aprovacao_${Date.now()}.pdf`;
       const { url: termoAprovacaoUrl } = await uploadFile(termoAprovacaoBuffer, termoAprovacaoPath);
 
-      // 6. Atualizar a Banca no banco de dados com os novos campos de PDFs
+      // 5.5. Enviar PDFs para o DocuSign
+      const { createEnvelope } = await import("@/app/lib/docusign");
+      
+      const pdfsParaAssinar = [
+        { name: "Ata_de_Defesa.pdf", buffer: ataBuffer },
+        { name: "Ficha_Geral.pdf", buffer: fichaGeralBuffer },
+        { name: "Termo_Aprovacao.pdf", buffer: termoAprovacaoBuffer },
+      ];
+
+      const signers = [];
+      if (orientadorMembro) {
+        signers.push({
+          email: orientadorMembro.usuario.email,
+          name: orientadorMembro.usuario.nome,
+          routingOrder: "1",
+          anchorString: `[sg_${orientadorMembro.usuario.nome}]`,
+        });
+      }
+      if (membro1) {
+        signers.push({
+          email: membro1.usuario.email,
+          name: membro1.usuario.nome,
+          routingOrder: "1",
+          anchorString: `[sg_${membro1.usuario.nome}]`,
+        });
+      }
+      if (membro2) {
+        signers.push({
+          email: membro2.usuario.email,
+          name: membro2.usuario.nome,
+          routingOrder: "1",
+          anchorString: `[sg_${membro2.usuario.nome}]`,
+        });
+      }
+
+      const docusignEnvelopeId = await createEnvelope(
+        pdfsParaAssinar,
+        signers,
+        `Documentos de Avaliação - ${banca.trabalho.aluno.nome}`
+      );
+
+      // 6. Atualizar a Banca no banco de dados com os novos campos de PDFs e DocuSign
       const bancaAtualizada = await prisma.banca.update({
         where: { id },
         data: {
           ataPdfUrl: ataUrl,
           fichaGeralPdfUrl: fichaGeralUrl,
           termoAprovacaoPdfUrl: termoAprovacaoUrl,
+          docusignEnvelopeId: docusignEnvelopeId,
+          statusAssinatura: "PENDENTE",
         },
       });
 
