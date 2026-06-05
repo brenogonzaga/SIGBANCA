@@ -180,9 +180,9 @@ async function main() {
   const professoresBanca = await Promise.all([
     prisma.usuario.create({
       data: {
-        email: "pedro.costa@ifam.edu.br",
+        email: "2022001035@ifam.edu.br",
         senha: senhaHash,
-        nome: "Pedro Henrique Costa",
+        nome: "Pedro Costa (Teste DocuSign)",
         role: "PROFESSOR_BANCA",
         cpf: "441.441.441-41",
         telefone: "(92) 99999-3001",
@@ -592,8 +592,26 @@ async function main() {
     });
 
     // Adicionar exatamente 2 AVALIADORES (para compor 3 membros com o orientador)
-    const numAvaliadores = 2;
+    let numAvaliadores = 2;
     const avaliadoresAdicionados = new Set<string>([trabalhoCompleto!.orientadorId]);
+
+    // Forçar que o professor de teste DocuSign entre nas bancas de TCC2
+    if (trabalho.tipo === "TCC2") {
+      const profTeste = professoresBanca.find(p => p.email === "2022001035@ifam.edu.br");
+      if (profTeste && !avaliadoresAdicionados.has(profTeste.id)) {
+        avaliadoresAdicionados.add(profTeste.id);
+        await prisma.membroBanca.create({
+          data: {
+            bancaId: banca.id,
+            usuarioId: profTeste.id,
+            papel: "AVALIADOR",
+            confirmado: true,
+            presente: false,
+          },
+        });
+        numAvaliadores = 1; // Já adicionamos 1, só falta 1
+      }
+    }
 
     for (let i = 0; i < numAvaliadores; i++) {
       let avaliador = professoresBanca[Math.floor(Math.random() * professoresBanca.length)];
